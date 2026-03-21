@@ -46,15 +46,11 @@ export default function RoomPage() {
   const { isConnected } = useConnection();
   const emit = useSocketEmit();
 
-  // Voting and result state
   const [voteState, setVoteState] = useState<VoteStatePayload>({ totalEligible: 0, votedCount: 0 });
   const [roundResult, setRoundResult] = useState<RoundResultPayload | null>(null);
-
-  // Reconnect state
   const [reconnectStatus, setReconnectStatus] = useState<"idle" | "reconnecting" | "failed">("idle");
   const reconnectAttempted = useRef(false);
 
-  // Store reconnect token when room_created or room_joined events arrive
   useSocketEvent<{ room: Room; playerId: string; reconnectToken: string }>(
     ServerEvents.ROOM_CREATED,
     (data) => {
@@ -73,7 +69,6 @@ export default function RoomPage() {
     }
   );
 
-  // Reconnect callbacks
   const { attemptReconnect } = useReconnect({
     onSessionRecovered: useCallback(
       (data) => {
@@ -91,17 +86,14 @@ export default function RoomPage() {
     }, []),
   });
 
-  // Connect socket on mount if not connected
   useEffect(() => {
     connectSocket();
   }, []);
 
-  // On mount or reconnect: attempt reconnect if we have a stored token and no room data
   useEffect(() => {
     if (reconnectAttempted.current) return;
     if (!isConnected) return;
-    if (room && myPlayerId) return; // Already have state
-
+    if (room && myPlayerId) return;
     const token = getStoredReconnectToken(roomCode);
     if (token) {
       reconnectAttempted.current = true;
@@ -110,38 +102,27 @@ export default function RoomPage() {
     }
   }, [isConnected, room, myPlayerId, roomCode, attemptReconnect]);
 
-  // When socket reconnects after a disconnect, attempt session recovery
   useEffect(() => {
     if (!isConnected) return;
     if (reconnectStatus !== "reconnecting") return;
-
     const token = getStoredReconnectToken(roomCode);
-    if (token) {
-      attemptReconnect(roomCode);
-    }
+    if (token) attemptReconnect(roomCode);
   }, [isConnected, reconnectStatus, roomCode, attemptReconnect]);
 
-  // When socket disconnects and we have a token, show reconnecting banner
   useEffect(() => {
     if (!isConnected && room && myPlayerId) {
       const token = getStoredReconnectToken(roomCode);
-      if (token) {
-        setReconnectStatus("reconnecting");
-      }
+      if (token) setReconnectStatus("reconnecting");
     }
   }, [isConnected, room, myPlayerId, roomCode]);
 
-  // Redirect to home if no room/player data and no reconnect possibility
   useEffect(() => {
     if (!room && !myPlayerId && reconnectStatus === "idle") {
       const token = getStoredReconnectToken(roomCode);
-      if (!token) {
-        router.replace("/");
-      }
+      if (!token) router.replace("/");
     }
   }, [room, myPlayerId, reconnectStatus, roomCode, router]);
 
-  // --- Leave room handler ---
   const handleLeave = useCallback(() => {
     emit(ClientEvents.LEAVE_ROOM);
     clearRoom();
@@ -151,54 +132,30 @@ export default function RoomPage() {
     router.replace("/");
   }, [emit, clearRoom, clearPlayer, clearRole, roomCode, router]);
 
-  // --- Socket event listeners ---
-
-  useSocketEvent<Room>(ServerEvents.ROOM_STATE_UPDATED, (data) => {
-    setRoom(data);
-  });
-
-  useSocketEvent<{ players: Player[] }>(ServerEvents.PLAYER_LIST_UPDATED, (data) => {
-    updatePlayers(data.players);
-  });
+  // Socket listeners
+  useSocketEvent<Room>(ServerEvents.ROOM_STATE_UPDATED, (data) => setRoom(data));
+  useSocketEvent<{ players: Player[] }>(ServerEvents.PLAYER_LIST_UPDATED, (data) => updatePlayers(data.players));
 
   useSocketEvent<{ newAdminId: string }>(ServerEvents.ADMIN_CHANGED, (data) => {
     if (room) {
-      const updatedPlayers = room.players.map((p) => ({
-        ...p,
-        isAdmin: p.id === data.newAdminId,
-      }));
+      const updatedPlayers = room.players.map((p) => ({ ...p, isAdmin: p.id === data.newAdminId }));
       setRoom({ ...room, adminPlayerId: data.newAdminId, players: updatedPlayers });
     }
   });
 
   useSocketEvent<{ playerId: string }>(ServerEvents.PLAYER_DISCONNECTED, (data) => {
-    if (room) {
-      const updatedPlayers = room.players.map((p) =>
-        p.id === data.playerId ? { ...p, isConnected: false } : p
-      );
-      updatePlayers(updatedPlayers);
-    }
+    if (room) updatePlayers(room.players.map((p) => p.id === data.playerId ? { ...p, isConnected: false } : p));
   });
 
   useSocketEvent<{ playerId: string }>(ServerEvents.PLAYER_RECONNECTED, (data) => {
-    if (room) {
-      const updatedPlayers = room.players.map((p) =>
-        p.id === data.playerId ? { ...p, isConnected: true } : p
-      );
-      updatePlayers(updatedPlayers);
-    }
+    if (room) updatePlayers(room.players.map((p) => p.id === data.playerId ? { ...p, isConnected: true } : p));
   });
 
   useSocketEvent<{ word: string; words: string[] }>(ServerEvents.WORD_ADDED, (data) => {
-    if (room) {
-      setRoom({ ...room, words: data.words });
-    }
+    if (room) setRoom({ ...room, words: data.words });
   });
 
-  // Game events
-  useSocketEvent<RoleAssignedPayload>(ServerEvents.ROLE_ASSIGNED, (data) => {
-    setRole(data.role, data.word);
-  });
+  useSocketEvent<RoleAssignedPayload>(ServerEvents.ROLE_ASSIGNED, (data) => setRole(data.role, data.word));
 
   useSocketEvent<Room>(ServerEvents.GAME_STARTED, (data) => {
     setRoom(data);
@@ -206,26 +163,16 @@ export default function RoomPage() {
     setRoundResult(null);
   });
 
-  useSocketEvent<{ phase: RoomStatus }>(ServerEvents.PHASE_CHANGED, (data) => {
-    updateRoomStatus(data.phase);
-  });
+  useSocketEvent<{ phase: RoomStatus }>(ServerEvents.PHASE_CHANGED, (data) => updateRoomStatus(data.phase));
+  useSocketEvent<VoteStatePayload>(ServerEvents.VOTE_STATE_UPDATED, (data) => setVoteState(data));
+  useSocketEvent<RoundResultPayload>(ServerEvents.ROUND_RESULT, (data) => setRoundResult(data));
 
-  useSocketEvent<VoteStatePayload>(ServerEvents.VOTE_STATE_UPDATED, (data) => {
-    setVoteState(data);
-  });
-
-  useSocketEvent<RoundResultPayload>(ServerEvents.ROUND_RESULT, (data) => {
-    setRoundResult(data);
-  });
-
-  useSocketEvent<Room>(ServerEvents.GAME_STOPPED, (_data) => {
+  useSocketEvent<Room>(ServerEvents.GAME_STOPPED, (data) => {
     clearRole();
-    setRoom(_data);
+    setRoom(data);
     setVoteState({ totalEligible: 0, votedCount: 0 });
     setRoundResult(null);
   });
-
-  // --- Admin callbacks ---
 
   const handleKick = useCallback(
     (targetPlayerId: string) => {
@@ -247,34 +194,27 @@ export default function RoomPage() {
     [room, emit]
   );
 
-  // --- Reconnect banner ---
-  const showReconnectBanner =
-    reconnectStatus === "reconnecting" || reconnectStatus === "failed";
+  const showReconnectBanner = reconnectStatus === "reconnecting" || reconnectStatus === "failed";
 
-  // --- Loading state ---
-
+  // Loading states
   if (!room || !myPlayerId) {
     if (reconnectStatus === "reconnecting") {
       return (
         <Layout>
           <ReconnectBanner status="reconnecting" />
           <div className="flex items-center justify-center py-20">
-            <span className="text-foreground/40">جاري إعادة الاتصال...</span>
+            <span className="text-foreground-dim text-sm">جاري إعادة الاتصال...</span>
           </div>
         </Layout>
       );
     }
     if (reconnectStatus === "failed") {
-      return (
-        <Layout>
-          <ReconnectBanner status="failed" />
-        </Layout>
-      );
+      return <Layout><ReconnectBanner status="failed" /></Layout>;
     }
     return (
       <Layout>
         <div className="flex items-center justify-center py-20">
-          <span className="text-foreground/40">جاري التحميل...</span>
+          <span className="text-foreground-dim text-sm">جاري التحميل...</span>
         </div>
       </Layout>
     );
@@ -283,41 +223,37 @@ export default function RoomPage() {
   const status = room.status;
   const isLobby = status === "WAITING" || status === "STOPPED";
 
-  // --- Render ---
-
   return (
     <Layout>
       {showReconnectBanner && (
         <ReconnectBanner status={reconnectStatus as "reconnecting" | "failed"} />
       )}
 
-      <div className="flex flex-col items-center gap-6">
-        {/* Header with room code and leave button */}
-        <div className="w-full flex items-center justify-between">
-          <div className="flex-1" />
+      <div className="flex flex-col gap-5 sm:gap-6">
+        {/* Header: room code centered, leave button top-left */}
+        <div className="relative flex items-start justify-center pt-2">
+          <button
+            onClick={handleLeave}
+            className="absolute left-0 top-2 rounded-lg bg-danger/10 text-danger px-3 py-1.5 text-[10px] sm:text-xs font-medium hover:bg-danger/20 transition-all border border-danger/20 cursor-pointer"
+          >
+            مغادرة
+          </button>
           <RoomCode code={room.code} />
-          <div className="flex-1 flex justify-end">
-            <button
-              onClick={handleLeave}
-              className="rounded-lg bg-red-500/10 text-red-500 px-3 py-1.5 text-xs font-medium hover:bg-red-500/20 transition-colors border border-red-500/20"
-            >
-              مغادرة
-            </button>
-          </div>
         </div>
 
-        {/* Phase indicator (shown during active game) */}
+        {/* Status text */}
+        {isLobby && (
+          <p className="text-center text-xs sm:text-sm text-foreground-muted">
+            {status === "STOPPED" ? "اللعبة متوقفة" : "في انتظار بدء اللعبة"}
+          </p>
+        )}
+
+        {/* Phase indicator */}
         {!isLobby && <PhaseIndicator currentPhase={status} />}
 
-        {/* Lobby view */}
+        {/* Lobby */}
         {isLobby && (
-          <>
-            <div className="w-full text-center">
-              <span className="text-sm text-foreground/50">
-                {status === "STOPPED" ? "اللعبة متوقفة" : "في انتظار بدء اللعبة"}
-              </span>
-            </div>
-
+          <div className="flex flex-col gap-5 sm:gap-6">
             <PlayerList
               players={room.players}
               currentPlayerId={myPlayerId}
@@ -325,32 +261,28 @@ export default function RoomPage() {
               onKick={handleKick}
               onTransfer={handleTransfer}
             />
-
             <AdminPanel />
-
             <GameControls />
-          </>
+          </div>
         )}
 
-        {/* Role Reveal phase */}
+        {/* Game phases */}
         {status === "ROLE_REVEAL" && (
-          <>
+          <div className="flex flex-col gap-5">
             <RoleReveal />
             <GameControls />
-          </>
+          </div>
         )}
 
-        {/* Discussion phase */}
         {status === "DISCUSSION" && (
-          <>
+          <div className="flex flex-col gap-5">
             <Discussion />
             <GameControls />
-          </>
+          </div>
         )}
 
-        {/* Voting phase */}
         {status === "VOTING" && (
-          <>
+          <div className="flex flex-col gap-5">
             <VotingScreen
               players={room.players}
               currentPlayerId={myPlayerId}
@@ -359,21 +291,17 @@ export default function RoomPage() {
               votedCount={voteState.votedCount}
             />
             {isAdmin && (
-              <OfflineVoting
-                players={room.players}
-                currentPlayerId={myPlayerId}
-              />
+              <OfflineVoting players={room.players} currentPlayerId={myPlayerId} />
             )}
             <GameControls />
-          </>
+          </div>
         )}
 
-        {/* Result phase */}
         {status === "RESULT" && (
-          <>
+          <div className="flex flex-col gap-5">
             <ResultScreen result={roundResult} players={room.players} />
             <GameControls />
-          </>
+          </div>
         )}
       </div>
     </Layout>

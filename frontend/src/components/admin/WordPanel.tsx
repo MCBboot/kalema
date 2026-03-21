@@ -18,7 +18,7 @@ export default function WordPanel() {
   const { room } = useRoom();
   const emit = useSocketEmit();
 
-  const wordCount = room?.words.length ?? 0;
+  const wordCount = room?.words?.length ?? 0;
 
   useSocketEvent(ServerEvents.WORD_ADDED, () => {
     setSuccess(true);
@@ -46,14 +46,15 @@ export default function WordPanel() {
   }, [word, emit]);
 
   return (
-    <div>
-      <h3 className="text-md font-semibold mb-3">الكلمات</h3>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[10px] sm:text-xs font-bold text-foreground-muted tracking-wide uppercase">الكلمات</h3>
+        <span className="text-[10px] sm:text-xs text-foreground-dim">
+          <span className="font-mono text-accent">{wordCount}</span> كلمة
+        </span>
+      </div>
 
-      <p className="text-sm text-foreground/60 mb-3">
-        عدد الكلمات: {wordCount}
-      </p>
-
-      <div className="flex items-end gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row gap-2">
         <Input
           value={word}
           onChange={setWord}
@@ -63,23 +64,19 @@ export default function WordPanel() {
         <Button
           onClick={handleAddWord}
           disabled={!word.trim()}
-          className="w-auto px-6 flex-shrink-0"
+          className="w-full sm:w-auto sm:px-6 flex-shrink-0"
         >
           إضافة
         </Button>
       </div>
 
       {success && (
-        <div className="w-full rounded-xl bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm mb-3">
+        <div className="w-full rounded-xl sm:rounded-2xl bg-success-surface border border-success/20 px-3 py-2.5 text-success text-xs sm:text-sm">
           تمت الإضافة
         </div>
       )}
 
-      {error && (
-        <div className="mb-3">
-          <ErrorMessage code={error} />
-        </div>
-      )}
+      {error && <ErrorMessage code={error} />}
     </div>
   );
 }

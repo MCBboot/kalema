@@ -117,8 +117,19 @@ export function getRoomSnapshot(room: Room): object {
       type: p.type,
       isAdmin: p.isAdmin,
       isConnected: p.isConnected,
+      socketId: p.socketId,
+      joinedAt: p.joinedAt,
     })),
-    wordCount: room.words.length,
+    words: room.words,
+    currentRound: room.currentRound
+      ? {
+          id: room.currentRound.id,
+          phase: room.currentRound.phase,
+          votes: room.currentRound.votes,
+          startedAt: room.currentRound.startedAt,
+          // word and impostorPlayerId intentionally omitted — secret data
+        }
+      : null,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt,
   };

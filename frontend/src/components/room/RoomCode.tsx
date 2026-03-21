@@ -14,7 +14,6 @@ export default function RoomCode({ code }: RoomCodeProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const textArea = document.createElement("textarea");
       textArea.value = code;
       document.body.appendChild(textArea);
@@ -27,22 +26,22 @@ export default function RoomCode({ code }: RoomCodeProps) {
   }, [code]);
 
   return (
-    <div className="w-full flex flex-col items-center gap-2">
-      <span className="text-sm text-foreground/60">رمز الغرفة</span>
-      <div className="flex items-center gap-3 bg-foreground/5 border border-foreground/20 rounded-xl px-6 py-4">
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[10px] sm:text-xs text-foreground-muted tracking-wider">رمز الغرفة</span>
+      <button
+        onClick={handleCopy}
+        className="group flex items-center gap-2 sm:gap-3 card px-4 sm:px-6 py-3 sm:py-4 transition-all duration-300 hover:border-accent/30 cursor-pointer active:scale-[0.97]"
+      >
         <span
           dir="ltr"
-          className="text-4xl font-bold tracking-[0.3em] text-primary select-all"
+          className="text-2xl sm:text-3xl font-bold tracking-[0.3em] sm:tracking-[0.4em] text-accent select-all"
         >
           {code}
         </span>
-        <button
-          onClick={handleCopy}
-          className="text-sm text-foreground/50 hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-foreground/20 hover:border-foreground/40"
-        >
-          {copied ? "تم النسخ" : "نسخ"}
-        </button>
-      </div>
+        <span className="text-[9px] sm:text-xs text-foreground-dim group-hover:text-accent transition-colors border border-border-visible group-hover:border-accent/30 rounded-md sm:rounded-lg px-2 py-0.5 sm:py-1">
+          {copied ? "تم" : "نسخ"}
+        </span>
+      </button>
     </div>
   );
 }

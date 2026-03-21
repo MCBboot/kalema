@@ -17,7 +17,7 @@ try {
 
 registerSocketHandlers(io);
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, "0.0.0.0", () => {
   logInfo("Server", `Kalema backend started on port ${PORT}`);
   startCleanupJob();
   logInfo("Startup", "Cleanup job started");

@@ -1,10 +1,10 @@
 "use client";
 import { useState, useCallback } from "react";
+import { cn } from "@/utils/rtl";
 import Input from "@/components/shared/Input";
 import Button from "@/components/shared/Button";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 import { useRoom } from "@/store/roomStore";
-import { usePlayer } from "@/store/playerStore";
 import { useSocketEvent, useSocketEmit } from "@/hooks/useSocketEvents";
 import {
   ClientEvents,
@@ -17,12 +17,9 @@ export default function PlayerManagement() {
   const [playerName, setPlayerName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { room } = useRoom();
-  const { myPlayerId } = usePlayer();
   const emit = useSocketEmit();
 
-  const nonAdminPlayers = room
-    ? room.players.filter((p) => !p.isAdmin)
-    : [];
+  const nonAdminPlayers = room ? room.players.filter((p) => !p.isAdmin) : [];
 
   useSocketEvent<ActionRejectedPayload>(ServerEvents.ACTION_REJECTED, (data) => {
     setError(data.code);
@@ -60,35 +57,31 @@ export default function PlayerManagement() {
   );
 
   return (
-    <div>
-      <h3 className="text-md font-semibold mb-3">إدارة اللاعبين</h3>
+    <div className="space-y-3">
+      <h3 className="text-[10px] sm:text-xs font-bold text-foreground-muted tracking-wide uppercase">إدارة اللاعبين</h3>
 
-      {/* Add offline player */}
-      <div className="flex items-end gap-2 mb-4">
+      {/* Add offline player — stacked on mobile, side-by-side on larger */}
+      <div className="flex flex-col sm:flex-row gap-2">
         <Input
           value={playerName}
           onChange={setPlayerName}
-          placeholder="اسم اللاعب"
+          placeholder="اسم لاعب غير متصل"
           className="flex-1"
         />
         <Button
           onClick={handleAddOffline}
           disabled={!playerName.trim()}
-          className="w-auto px-6 flex-shrink-0"
+          className="w-full sm:w-auto sm:px-6 flex-shrink-0"
         >
           إضافة
         </Button>
       </div>
 
-      {error && (
-        <div className="mb-4">
-          <ErrorMessage code={error} />
-        </div>
-      )}
+      {error && <ErrorMessage code={error} />}
 
-      {/* Player actions list */}
+      {/* Player list */}
       {nonAdminPlayers.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {nonAdminPlayers.map((player) => (
             <PlayerActionRow
               key={player.id}
@@ -118,36 +111,37 @@ function PlayerActionRow({
   const isOnline = player.type === "ONLINE";
 
   return (
-    <div className="flex items-center justify-between bg-foreground/5 rounded-xl px-3 py-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">{player.displayName}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-surface rounded-xl px-3 py-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-sm font-medium truncate">{player.displayName}</span>
         <span
-          className={`text-xs px-2 py-0.5 rounded-full ${
+          className={cn(
+            "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full border flex-shrink-0",
             isOnline
-              ? "bg-green-500/20 text-green-400"
-              : "bg-gray-500/20 text-gray-400"
-          }`}
+              ? "bg-success/10 text-success border-success/20"
+              : "bg-foreground-dim/10 text-foreground-dim border-foreground-dim/20"
+          )}
         >
           {isOnline ? "متصل" : "غير متصل"}
         </span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <button
           onClick={() => onTransfer(player.id, player.displayName)}
-          className="text-xs px-2 py-1 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors"
+          className="text-[9px] sm:text-[10px] px-2 py-1 rounded-lg bg-accent/10 text-accent/70 hover:bg-accent/20 hover:text-accent transition-all cursor-pointer"
         >
-          نقل الإدارة
+          نقل
         </button>
         <button
           onClick={() => onKick(player.id, player.displayName)}
-          className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+          className="text-[9px] sm:text-[10px] px-2 py-1 rounded-lg bg-danger/10 text-danger/70 hover:bg-danger/20 hover:text-danger transition-all cursor-pointer"
         >
           طرد
         </button>
         {!isOnline && (
           <button
             onClick={() => onRemoveOffline(player.id)}
-            className="text-xs px-2 py-1 rounded-lg bg-foreground/10 text-foreground/60 hover:bg-foreground/20 transition-colors"
+            className="text-[9px] sm:text-[10px] px-2 py-1 rounded-lg bg-foreground-dim/10 text-foreground-dim hover:bg-foreground-dim/20 transition-all cursor-pointer"
           >
             إزالة
           </button>

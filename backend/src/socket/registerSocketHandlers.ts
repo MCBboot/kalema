@@ -77,7 +77,7 @@ export function registerSocketHandlers(io: Server): void {
     socket.on(CREATE_ROOM, (payload: unknown) => {
       const result = validateCreateRoom(payload);
       if (!result.valid) {
-        socket.emit(ACTION_REJECTED, { event: CREATE_ROOM, reason: result.error });
+        socket.emit(ACTION_REJECTED, { code: result.code, message: result.error });
         return;
       }
 
@@ -94,7 +94,7 @@ export function registerSocketHandlers(io: Server): void {
 
         socket.emit(ROOM_CREATED, {
           room: getRoomSnapshot(room),
-          playerId: player.id,
+          player: { id: player.id, displayName: player.displayName },
           reconnectToken,
         });
 
@@ -102,14 +102,14 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create room";
         logError("Socket", `create_room error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: CREATE_ROOM, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(JOIN_ROOM, (payload: unknown) => {
       const result = validateJoinRoom(payload);
       if (!result.valid) {
-        socket.emit(ACTION_REJECTED, { event: JOIN_ROOM, reason: result.error });
+        socket.emit(ACTION_REJECTED, { code: result.code, message: result.error });
         return;
       }
 
@@ -126,7 +126,7 @@ export function registerSocketHandlers(io: Server): void {
 
         socket.emit(ROOM_JOINED, {
           room: getRoomSnapshot(room),
-          playerId: player.id,
+          player: { id: player.id, displayName: player.displayName },
           reconnectToken,
         });
 
@@ -144,7 +144,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to join room";
         logError("Socket", `join_room error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: JOIN_ROOM, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
@@ -154,7 +154,7 @@ export function registerSocketHandlers(io: Server): void {
 
     socket.on(RECONNECT_SESSION, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("token" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: RECONNECT_SESSION, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
@@ -162,13 +162,13 @@ export function registerSocketHandlers(io: Server): void {
         const { token } = payload as { token: string };
 
         if (typeof token !== "string" || !token) {
-          socket.emit(ACTION_REJECTED, { event: RECONNECT_SESSION, reason: "INVALID_TOKEN" });
+          socket.emit(ACTION_REJECTED, { code: "INVALID_TOKEN", message: "INVALID_TOKEN" });
           return;
         }
 
         const result = recoverSession(token, socket.id);
         if (!result) {
-          socket.emit(ACTION_REJECTED, { event: RECONNECT_SESSION, reason: "INVALID_TOKEN" });
+          socket.emit(ACTION_REJECTED, { code: "INVALID_TOKEN", message: "INVALID_TOKEN" });
           return;
         }
 
@@ -176,10 +176,22 @@ export function registerSocketHandlers(io: Server): void {
 
         socket.join(room.id);
 
+        // Build role info if game is active
+        let role: { role: string; word?: string } | undefined;
+        if (room.currentRound) {
+          if (player.id === room.currentRound.impostorPlayerId) {
+            role = { role: "impostor" };
+          } else {
+            role = { role: "normal", word: room.currentRound.word };
+          }
+        }
+
         socket.emit(SESSION_RECOVERED, {
           room: getRoomSnapshot(room),
           playerId: player.id,
+          displayName: player.displayName,
           reconnectToken: newToken,
+          role,
         });
 
         io.to(room.id).emit(PLAYER_RECONNECTED, {
@@ -201,59 +213,59 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to recover session";
         logError("Socket", `reconnect_session error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: RECONNECT_SESSION, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(TRANSFER_ADMIN, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: TRANSFER_ADMIN, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: TRANSFER_ADMIN, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: TRANSFER_ADMIN, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
         const { targetPlayerId } = payload as { targetPlayerId: string };
         transferAdmin(room, session.playerId, targetPlayerId);
 
-        io.to(room.id).emit(ADMIN_CHANGED, { newAdminPlayerId: targetPlayerId });
-        io.to(room.id).emit(ROOM_STATE_UPDATED, { room: getRoomSnapshot(room) });
+        io.to(room.id).emit(ADMIN_CHANGED, { newAdminId: targetPlayerId });
+        io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
 
         logInfo("Socket", `Admin transferred to ${targetPlayerId} in room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to transfer admin";
         logError("Socket", `transfer_admin error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: TRANSFER_ADMIN, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(KICK_PLAYER, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: KICK_PLAYER, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: KICK_PLAYER, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: KICK_PLAYER, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
@@ -264,7 +276,7 @@ export function registerSocketHandlers(io: Server): void {
           const kickedSocketId = kicked.socketId;
           const kickedSocket = io.sockets.sockets.get(kickedSocketId);
           if (kickedSocket) {
-            kickedSocket.emit(ACTION_REJECTED, { event: KICK_PLAYER, reason: "YOU_WERE_KICKED" });
+            kickedSocket.emit(ACTION_REJECTED, { code: "YOU_WERE_KICKED", message: "YOU_WERE_KICKED" });
             kickedSocket.leave(room.id);
           }
         }
@@ -283,26 +295,26 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to kick player";
         logError("Socket", `kick_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: KICK_PLAYER, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(ADD_OFFLINE_PLAYER, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("displayName" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: ADD_OFFLINE_PLAYER, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: ADD_OFFLINE_PLAYER, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: ADD_OFFLINE_PLAYER, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
@@ -323,26 +335,26 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to add offline player";
         logError("Socket", `add_offline_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: ADD_OFFLINE_PLAYER, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(REMOVE_OFFLINE_PLAYER, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: REMOVE_OFFLINE_PLAYER, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: REMOVE_OFFLINE_PLAYER, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: REMOVE_OFFLINE_PLAYER, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
@@ -363,26 +375,26 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to remove offline player";
         logError("Socket", `remove_offline_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: REMOVE_OFFLINE_PLAYER, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(ADD_WORD, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("word" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: ADD_WORD, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: ADD_WORD, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: ADD_WORD, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
@@ -395,7 +407,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to add word";
         logError("Socket", `add_word error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: ADD_WORD, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
@@ -403,24 +415,24 @@ export function registerSocketHandlers(io: Server): void {
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: START_GAME, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: START_GAME, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
         if (room.adminPlayerId !== session.playerId) {
-          socket.emit(ACTION_REJECTED, { event: START_GAME, reason: "UNAUTHORIZED" });
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
           return;
         }
 
         const round = startRound(room);
 
-        io.to(room.id).emit(GAME_STARTED, { roomStatus: room.status });
+        io.to(room.id).emit(GAME_STARTED, getRoomSnapshot(room));
         io.to(room.id).emit(PHASE_CHANGED, { phase: round.phase });
 
         // Send private role assignments to each online eligible participant
@@ -439,7 +451,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to start game";
         logError("Socket", `start_game error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: START_GAME, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
@@ -447,30 +459,30 @@ export function registerSocketHandlers(io: Server): void {
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: STOP_GAME, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: STOP_GAME, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
         if (room.adminPlayerId !== session.playerId) {
-          socket.emit(ACTION_REJECTED, { event: STOP_GAME, reason: "UNAUTHORIZED" });
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
           return;
         }
 
         stopGame(room);
 
-        io.to(room.id).emit(GAME_STOPPED, { reason: "Admin stopped the game" });
+        io.to(room.id).emit(GAME_STOPPED, getRoomSnapshot(room));
 
         logInfo("Socket", `Game stopped in room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to stop game";
         logError("Socket", `stop_game error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: STOP_GAME, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
@@ -478,18 +490,18 @@ export function registerSocketHandlers(io: Server): void {
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: ADVANCE_PHASE, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: ADVANCE_PHASE, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
         if (room.adminPlayerId !== session.playerId) {
-          socket.emit(ACTION_REJECTED, { event: ADVANCE_PHASE, reason: "UNAUTHORIZED" });
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
           return;
         }
 
@@ -498,33 +510,33 @@ export function registerSocketHandlers(io: Server): void {
         io.to(room.id).emit(PHASE_CHANGED, { phase: newPhase });
 
         if (newPhase === "WAITING") {
-          io.to(room.id).emit(ROOM_STATE_UPDATED, { room: getRoomSnapshot(room) });
+          io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
         }
 
         logInfo("Socket", `Phase advanced to ${newPhase} in room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to advance phase";
         logError("Socket", `advance_phase error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: ADVANCE_PHASE, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 
     socket.on(SUBMIT_VOTE, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
-        socket.emit(ACTION_REJECTED, { event: SUBMIT_VOTE, reason: "INVALID_PAYLOAD" });
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
         return;
       }
 
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
-          socket.emit(ACTION_REJECTED, { event: SUBMIT_VOTE, reason: "NO_SESSION" });
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
           return;
         }
 
         const room = getRoom(session.roomId);
         if (!room) {
-          socket.emit(ACTION_REJECTED, { event: SUBMIT_VOTE, reason: "ROOM_NOT_FOUND" });
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
           return;
         }
 
@@ -557,7 +569,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to submit vote";
         logError("Socket", `submit_vote error: ${message}`);
-        socket.emit(ACTION_REJECTED, { event: SUBMIT_VOTE, reason: message });
+        socket.emit(ACTION_REJECTED, { code: message, message: message });
       }
     });
 

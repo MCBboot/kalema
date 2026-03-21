@@ -1,24 +1,139 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --primary: #6366f1;
-  --primary-hover: #818cf8;
+  /* Arabian Noir palette */
+  --background: #0c0c0f;
+  --surface: #141419;
+  --surface-raised: #1a1a22;
+  --surface-overlay: #22222d;
+
+  --foreground: #e8e6e1;
+  --foreground-muted: #8a8780;
+  --foreground-dim: #4a4843;
+
+  --accent: #d4a54a;
+  --accent-hover: #e0b85e;
+  --accent-dim: #d4a54a33;
+  --accent-glow: #d4a54a18;
+
+  --danger: #c44040;
+  --danger-dim: #c4404020;
+  --danger-surface: #c4404012;
+
+  --success: #3ea66d;
+  --success-dim: #3ea66d20;
+  --success-surface: #3ea66d12;
+
+  --border: #ffffff0a;
+  --border-visible: #ffffff14;
+  --border-accent: #d4a54a30;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
   --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-dim: var(--foreground-dim);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-danger: var(--danger);
+  --color-danger-dim: var(--danger-dim);
+  --color-danger-surface: var(--danger-surface);
+  --color-success: var(--success);
+  --color-success-dim: var(--success-dim);
+  --color-success-surface: var(--success-surface);
+  --color-border: var(--border);
+  --color-border-visible: var(--border-visible);
+  --color-border-accent: var(--border-accent);
   --font-sans: var(--font-noto-arabic);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-arabic), "Noto Sans Arabic", Arial, sans-serif;
+  font-family: var(--font-noto-arabic), "Noto Sans Arabic", sans-serif;
   direction: rtl;
   text-align: right;
 }
+
+/* Subtle noise texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Card surfaces */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-visible);
+  border-radius: 16px;
+}
+
+.card-raised {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-visible);
+  border-radius: 16px;
+}
+
+/* Glow effect for accent elements */
+.glow-accent {
+  box-shadow: 0 0 40px var(--accent-glow), 0 0 80px var(--accent-glow);
+}
+
+/* Entrance animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+/* Stagger children */
+.stagger > * {
+  animation: fade-up 0.4s ease-out both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* Pulse glow for impostor reveal */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--danger-dim); }
+  50% { box-shadow: 0 0 40px var(--danger-dim), 0 0 60px var(--danger-dim); }
+}
+
+.pulse-danger {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--accent-dim);
+  color: var(--foreground);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--foreground-dim); border-radius: 2px; }

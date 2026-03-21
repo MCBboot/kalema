@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { cn } from "@/utils/rtl";
 import type { Player } from "@/lib/api-types";
 
 interface PlayerListProps {
@@ -28,28 +29,28 @@ const PlayerRow = React.memo(function PlayerRow({
   const showActions = isAdmin && !player.isAdmin;
 
   return (
-    <div className="flex items-center justify-between py-3 px-2">
+    <div className="flex items-center justify-between py-3 px-4">
       <div className="flex items-center gap-3">
-        {/* Online/offline indicator */}
         <span
-          className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+          className={cn(
+            "w-2 h-2 rounded-full flex-shrink-0",
             !isOnline
-              ? "bg-gray-500"
+              ? "bg-foreground-dim"
               : isDisconnected
-              ? "bg-yellow-500"
-              : "bg-green-500"
-          }`}
+              ? "bg-accent"
+              : "bg-success"
+          )}
         />
-        <span className={`font-medium ${isDisconnected ? "text-foreground/40" : ""}`}>
+        <span className={cn("font-medium text-sm", isDisconnected && "text-foreground-muted")}>
           {player.displayName}
         </span>
         {isMe && (
-          <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+          <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">
             أنت
           </span>
         )}
         {player.isAdmin && (
-          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full border border-accent/20">
             مشرف
           </span>
         )}
@@ -59,27 +60,18 @@ const PlayerRow = React.memo(function PlayerRow({
           <>
             <button
               onClick={() => onTransfer?.(player.id)}
-              className="text-xs px-2 py-1 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors"
-              title="نقل الإدارة"
+              className="text-[10px] px-2 py-1 rounded-lg bg-accent/10 text-accent/70 hover:bg-accent/20 hover:text-accent transition-all border border-accent/10 cursor-pointer"
             >
               نقل
             </button>
             <button
               onClick={() => onKick?.(player.id)}
-              className="text-xs px-2 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-              title="طرد"
+              className="text-[10px] px-2 py-1 rounded-lg bg-danger/10 text-danger/70 hover:bg-danger/20 hover:text-danger transition-all border border-danger/10 cursor-pointer"
             >
               طرد
             </button>
           </>
         )}
-        <span className="text-xs text-foreground/40">
-          {!isOnline
-            ? "غير متصل"
-            : isDisconnected
-            ? "انقطع الاتصال"
-            : "متصل"}
-        </span>
       </div>
     </div>
   );
@@ -92,7 +84,6 @@ export default function PlayerList({
   onKick,
   onTransfer,
 }: PlayerListProps) {
-  // Group: online first, then offline
   const sortedPlayers = [...players].sort((a, b) => {
     if (a.type === "ONLINE" && b.type !== "ONLINE") return -1;
     if (a.type !== "ONLINE" && b.type === "ONLINE") return 1;
@@ -101,12 +92,13 @@ export default function PlayerList({
 
   return (
     <div className="w-full">
-      <h2 className="text-lg font-semibold mb-3">
-        اللاعبون ({players.length})
-      </h2>
-      <div className="bg-foreground/5 border border-foreground/20 rounded-xl divide-y divide-foreground/10">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-foreground-muted tracking-wide">اللاعبون</h2>
+        <span className="text-xs text-foreground-dim font-mono">{players.length}</span>
+      </div>
+      <div className="card divide-y divide-border">
         {sortedPlayers.length === 0 ? (
-          <div className="py-6 text-center text-foreground/40">
+          <div className="py-8 text-center text-foreground-dim text-sm">
             لا يوجد لاعبون بعد
           </div>
         ) : (

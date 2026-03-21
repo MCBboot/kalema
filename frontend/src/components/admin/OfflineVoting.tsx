@@ -24,12 +24,10 @@ export default function OfflineVoting({ players, currentPlayerId }: OfflineVotin
     setError(data.message);
   });
 
-  // Offline players who haven't voted yet
   const offlinePending = players.filter(
     (p) => p.type === "OFFLINE" && !votedOfflineIds.has(p.id)
   );
 
-  // Available targets (all players except the one voting)
   const getTargets = (voterId: string) =>
     players.filter((p) => p.id !== voterId);
 
@@ -51,33 +49,26 @@ export default function OfflineVoting({ players, currentPlayerId }: OfflineVotin
   if (offlinePending.length === 0) return null;
 
   return (
-    <div className="w-full bg-foreground/5 border border-foreground/20 rounded-2xl p-6 space-y-4">
-      <h3 className="text-lg font-bold text-center">تصويت اللاعبين غير المتصلين</h3>
+    <div className="w-full card p-4 sm:p-5 space-y-4">
+      <h3 className="text-xs sm:text-sm font-bold text-foreground-muted text-center">تصويت اللاعبين غير المتصلين</h3>
 
       {offlinePending.map((offlinePlayer) => {
         const targets = getTargets(offlinePlayer.id);
         const selected = selectedTargets[offlinePlayer.id] ?? "";
 
         return (
-          <div
-            key={offlinePlayer.id}
-            className="bg-foreground/5 rounded-xl p-4 space-y-3"
-          >
-            <span className="font-medium">{offlinePlayer.displayName}</span>
-
+          <div key={offlinePlayer.id} className="bg-surface-raised rounded-xl p-3 sm:p-4 space-y-2.5">
+            <span className="font-medium text-sm">{offlinePlayer.displayName}</span>
             <select
               value={selected}
               onChange={(e) => handleTargetChange(offlinePlayer.id, e.target.value)}
-              className="w-full h-10 rounded-lg bg-background border border-foreground/20 px-3 text-foreground text-sm"
+              className="w-full h-10 rounded-xl bg-surface border border-border-visible px-3 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-accent/50"
             >
               <option value="">اختر لاعبًا</option>
               {targets.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName}
-                </option>
+                <option key={t.id} value={t.id}>{t.displayName}</option>
               ))}
             </select>
-
             <Button
               onClick={() => handleSubmitVote(offlinePlayer.id)}
               disabled={!selected}
@@ -90,8 +81,8 @@ export default function OfflineVoting({ players, currentPlayerId }: OfflineVotin
       })}
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-danger-surface border border-danger/20 rounded-xl p-3 text-center">
+          <p className="text-danger text-xs sm:text-sm">{error}</p>
         </div>
       )}
     </div>

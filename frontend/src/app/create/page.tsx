@@ -27,7 +27,7 @@ export default function CreatePage() {
   const [loading, setLoading] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  useSocketEvent<{ room: Room; player: Player; token: string }>(
+  useSocketEvent<{ room: Room; player: Player; reconnectToken: string }>(
     "room_created",
     (data) => {
       setRoom(data.room);
@@ -52,7 +52,7 @@ export default function CreatePage() {
 
   return (
     <Layout title="انشاء غرفة">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 stagger">
         <Input
           label="اسمك"
           value={displayName}
@@ -63,7 +63,7 @@ export default function CreatePage() {
         />
 
         <div className="w-full">
-          <label className="block text-sm font-medium text-foreground/70 mb-2">
+          <label className="block text-sm font-medium text-foreground-muted mb-3">
             نوع المشرف
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -72,28 +72,28 @@ export default function CreatePage() {
               disabled={loading}
               onClick={() => setAdminMode("ADMIN_PLAYER")}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl border px-4 py-4 transition-colors",
+                "flex flex-col items-center gap-1.5 rounded-2xl border px-4 py-5 transition-all duration-300 cursor-pointer",
                 adminMode === "ADMIN_PLAYER"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-foreground/20 text-foreground/60 hover:border-foreground/40"
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border-visible text-foreground-muted hover:border-accent/30"
               )}
             >
-              <span className="font-semibold text-sm">مشرف ولاعب</span>
-              <span className="text-xs opacity-70">تتحكم بالغرفة وتلعب أيضاً</span>
+              <span className="font-bold text-sm">مشرف ولاعب</span>
+              <span className="text-[10px] opacity-60">تتحكم وتلعب</span>
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={() => setAdminMode("ADMIN_ONLY")}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl border px-4 py-4 transition-colors",
+                "flex flex-col items-center gap-1.5 rounded-2xl border px-4 py-5 transition-all duration-300 cursor-pointer",
                 adminMode === "ADMIN_ONLY"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-foreground/20 text-foreground/60 hover:border-foreground/40"
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border-visible text-foreground-muted hover:border-accent/30"
               )}
             >
-              <span className="font-semibold text-sm">مشرف فقط</span>
-              <span className="text-xs opacity-70">تتحكم بالغرفة فقط</span>
+              <span className="font-bold text-sm">مشرف فقط</span>
+              <span className="text-[10px] opacity-60">تتحكم فقط</span>
             </button>
           </div>
         </div>

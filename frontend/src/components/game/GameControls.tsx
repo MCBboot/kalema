@@ -27,7 +27,6 @@ export default function GameControls() {
       setError(null);
       setLoading(true);
       emit(event);
-      // Reset loading after a short delay (server events will update state)
       setTimeout(() => setLoading(false), 2000);
     },
     [emit]
@@ -40,50 +39,36 @@ export default function GameControls() {
 
   return (
     <div className="w-full space-y-3">
-      {/* Main action button */}
       {status === "WAITING" && (
-        <Button
-          onClick={() => handleAction(ClientEvents.START_GAME)}
-          loading={loading}
-        >
+        <Button onClick={() => handleAction(ClientEvents.START_GAME)} loading={loading}>
           ابدأ اللعبة
         </Button>
       )}
 
       {status === "ROLE_REVEAL" && (
-        <Button
-          onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)}
-          loading={loading}
-        >
+        <Button onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)} loading={loading}>
           التالي: النقاش
         </Button>
       )}
 
       {status === "DISCUSSION" && (
-        <Button
-          onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)}
-          loading={loading}
-        >
+        <Button onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)} loading={loading}>
           التالي: التصويت
         </Button>
       )}
 
       {status === "VOTING" && (
         <div className="text-center py-3">
-          <span className="text-foreground/50">في انتظار التصويت</span>
+          <span className="text-foreground-muted text-sm">في انتظار التصويت</span>
         </div>
       )}
 
       {status === "RESULT" && (
-        <Button
-          onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)}
-          loading={loading}
-        >
+        <Button onClick={() => handleAction(ClientEvents.ADVANCE_PHASE)} loading={loading}>
           جولة جديدة
         </Button>
       )}
 
-      {/* Stop game button (only during active game phases) */}
       {isActive && (
         <Button
           variant="danger"
@@ -97,10 +82,9 @@ export default function GameControls() {
         </Button>
       )}
 
-      {/* Error message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-danger-surface border border-danger/20 rounded-2xl p-3 text-center">
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
     </div>

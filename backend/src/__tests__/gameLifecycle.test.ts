@@ -72,7 +72,7 @@ async function createRoomHelper(name = "Admin", adminMode: "ADMIN_PLAYER" | "ADM
   return {
     client,
     roomCode: data.room.code,
-    playerId: data.playerId,
+    playerId: data.player.id,
     reconnectToken: data.reconnectToken,
     roomData: data.room,
   };
@@ -86,7 +86,7 @@ async function joinRoomHelper(code: string, name: string) {
   const data = await p;
   return {
     client,
-    playerId: data.playerId,
+    playerId: data.player.id,
     reconnectToken: data.reconnectToken,
     roomData: data.room,
   };
@@ -183,7 +183,7 @@ describe("Room lifecycle", () => {
 
     const gameStartedResults = await Promise.all(gameStartedPromises);
     for (const gs of gameStartedResults) {
-      expect(gs.roomStatus).toBe("ROLE_REVEAL");
+      expect(gs.status).toBe("ROLE_REVEAL");
     }
 
     const phaseResults = await Promise.all(phasePromises);
@@ -369,7 +369,7 @@ describe("Admin actions", () => {
     admin.client.emit("kick_player", { targetPlayerId: bob.playerId });
 
     const kicked = await kickedPromise;
-    expect(kicked.reason).toBe("YOU_WERE_KICKED");
+    expect(kicked.code).toBe("YOU_WERE_KICKED");
 
     const playerList = await playerListPromise;
     expect(playerList.players.length).toBe(1);
@@ -385,7 +385,7 @@ describe("Admin actions", () => {
     admin.client.emit("transfer_admin", { targetPlayerId: bob.playerId });
 
     const changed = await adminChangedPromise;
-    expect(changed.newAdminPlayerId).toBe(bob.playerId);
+    expect(changed.newAdminId).toBe(bob.playerId);
   });
 });
 
@@ -443,8 +443,7 @@ describe("Disconnect/Reconnect", () => {
     client.emit("reconnect_session", { token: "invalid-token-12345" });
 
     const rejected = await rejectedPromise;
-    expect(rejected.event).toBe("reconnect_session");
-    expect(rejected.reason).toBe("INVALID_TOKEN");
+    expect(rejected.code).toBe("INVALID_TOKEN");
   });
 });
 
@@ -487,8 +486,7 @@ describe("Error cases", () => {
     bob.client.emit("start_game");
 
     const rejected = await rejectedPromise;
-    expect(rejected.event).toBe("start_game");
-    expect(rejected.reason).toBe("UNAUTHORIZED");
+    expect(rejected.code).toBe("UNAUTHORIZED");
   });
 
   it("INT17: Join with duplicate name → action_rejected DUPLICATE_NAME", async () => {
@@ -500,8 +498,7 @@ describe("Error cases", () => {
     client2.emit("join_room", { code: admin.roomCode, displayName: "Alice" });
 
     const rejected = await rejectedPromise;
-    expect(rejected.event).toBe("join_room");
-    expect(rejected.reason).toBe("DUPLICATE_NAME");
+    expect(rejected.code).toBe("DUPLICATE_NAME");
   });
 
   it("INT18: Start game with insufficient players → action_rejected INSUFFICIENT_PLAYERS", async () => {
@@ -512,8 +509,7 @@ describe("Error cases", () => {
     admin.client.emit("start_game");
 
     const rejected = await rejectedPromise;
-    expect(rejected.event).toBe("start_game");
-    expect(rejected.reason).toBe("INSUFFICIENT_PLAYERS");
+    expect(rejected.code).toBe("INSUFFICIENT_PLAYERS");
   });
 });
 
@@ -540,7 +536,7 @@ describe("Scale test", () => {
     const results = await Promise.all(gameStartedPromises);
     expect(results.length).toBe(10);
     for (const r of results) {
-      expect(r.roomStatus).toBe("ROLE_REVEAL");
+      expect(r.status).toBe("ROLE_REVEAL");
     }
   });
 });
@@ -575,7 +571,7 @@ describe("Full lifecycle", () => {
 
     const gsResults = await Promise.all(gameStartedPromises);
     for (const gs of gsResults) {
-      expect(gs.roomStatus).toBe("ROLE_REVEAL");
+      expect(gs.status).toBe("ROLE_REVEAL");
     }
 
     const roles = await Promise.all(rolePromises);

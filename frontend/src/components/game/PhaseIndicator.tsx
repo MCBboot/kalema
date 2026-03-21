@@ -8,7 +8,7 @@ interface PhaseIndicatorProps {
 
 const PHASES: { key: RoomStatus; label: string }[] = [
   { key: "WAITING", label: "الانتظار" },
-  { key: "ROLE_REVEAL", label: "كشف الأدوار" },
+  { key: "ROLE_REVEAL", label: "الأدوار" },
   { key: "DISCUSSION", label: "النقاش" },
   { key: "VOTING", label: "التصويت" },
   { key: "RESULT", label: "النتيجة" },
@@ -23,7 +23,7 @@ export default function PhaseIndicator({ currentPhase }: PhaseIndicatorProps) {
   const currentIndex = getPhaseIndex(currentPhase);
 
   return (
-    <div className="w-full">
+    <div className="w-full py-3">
       <div className="flex items-center justify-between">
         {PHASES.map((phase, index) => {
           const isCompleted = !isStopped && currentIndex > index;
@@ -32,35 +32,33 @@ export default function PhaseIndicator({ currentPhase }: PhaseIndicatorProps) {
 
           return (
             <div key={phase.key} className="flex items-center flex-1 last:flex-none">
-              {/* Phase dot and label */}
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-1.5">
                 <div
                   className={cn(
-                    "w-3 h-3 rounded-full border-2 transition-colors",
-                    isCompleted && "bg-primary border-primary",
-                    isCurrent && "bg-primary border-primary ring-2 ring-primary/30",
-                    isFuture && "bg-transparent border-foreground/20"
+                    "w-2.5 h-2.5 rounded-full transition-all duration-500",
+                    isCompleted && "bg-accent shadow-[0_0_8px_var(--accent-dim)]",
+                    isCurrent && "bg-accent shadow-[0_0_12px_var(--accent-dim)] scale-125",
+                    isFuture && "bg-foreground-dim/50"
                   )}
                 />
                 <span
                   className={cn(
-                    "text-[10px] whitespace-nowrap transition-colors",
-                    isCompleted && "text-primary",
-                    isCurrent && "text-primary font-semibold",
-                    isFuture && "text-foreground/30"
+                    "text-[10px] whitespace-nowrap transition-all duration-500",
+                    isCompleted && "text-accent/70",
+                    isCurrent && "text-accent font-bold",
+                    isFuture && "text-foreground-dim"
                   )}
                 >
                   {phase.label}
                 </span>
               </div>
-              {/* Connecting line */}
               {index < PHASES.length - 1 && (
                 <div
                   className={cn(
-                    "h-0.5 flex-1 mx-1 transition-colors",
+                    "h-px flex-1 mx-2 transition-all duration-500",
                     !isStopped && currentIndex > index
-                      ? "bg-primary"
-                      : "bg-foreground/10"
+                      ? "bg-accent/40"
+                      : "bg-foreground-dim/20"
                   )}
                 />
               )}

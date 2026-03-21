@@ -35,9 +35,7 @@ export default function VotingScreen({
     setError(data.message);
   });
 
-  const eligibleTargets = players.filter(
-    (p) => p.id !== currentPlayerId
-  );
+  const eligibleTargets = players.filter((p) => p.id !== currentPlayerId);
 
   const handleConfirmVote = useCallback(() => {
     if (!selectedTarget) return;
@@ -57,16 +55,18 @@ export default function VotingScreen({
 
   if (hasVoted) {
     return (
-      <div className="w-full space-y-6">
-        <div className="bg-foreground/5 border border-foreground/20 rounded-2xl p-8 text-center">
-          <div className="text-3xl mb-3">&#10003;</div>
-          <h2 className="text-xl font-bold text-primary">تم التصويت</h2>
+      <div className="w-full space-y-6 animate-fade-up">
+        <div className="card p-10 text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/15 border border-accent/20 flex items-center justify-center">
+            <span className="text-accent text-xl">&#10003;</span>
+          </div>
+          <h2 className="text-xl font-bold text-accent">تم التصويت</h2>
           {votedPlayer && (
-            <div className="mt-3 inline-block bg-primary/15 border border-primary/30 rounded-xl px-4 py-2">
-              <span className="text-primary font-semibold">{votedPlayer.displayName}</span>
+            <div className="mt-3 inline-block bg-accent/10 border border-accent/20 rounded-xl px-4 py-2">
+              <span className="text-accent font-semibold text-sm">{votedPlayer.displayName}</span>
             </div>
           )}
-          <p className="text-foreground/50 mt-2">في انتظار تصويت اللاعبين الآخرين</p>
+          <p className="text-foreground-muted mt-3 text-sm">في انتظار تصويت اللاعبين الآخرين</p>
         </div>
         <VoteProgress totalEligible={totalEligible} votedCount={votedCount} />
       </div>
@@ -74,43 +74,39 @@ export default function VotingScreen({
   }
 
   return (
-    <div className="w-full space-y-6">
-      {/* Header */}
+    <div className="w-full space-y-6 animate-fade-up">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-1">مرحلة التصويت</h2>
-        <p className="text-foreground/50">صوّت لمن تعتقد أنه المحتال</p>
+        <h2 className="text-2xl font-bold text-accent mb-1">مرحلة التصويت</h2>
+        <p className="text-foreground-muted text-sm">صوّت لمن تعتقد أنه المحتال</p>
       </div>
 
-      {/* Confirmation dialog */}
       {selectedTarget && selectedPlayer && (
-        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-6 text-center space-y-4">
+        <div className="card-raised border-accent/20 p-6 text-center space-y-4">
           <p className="text-lg font-semibold">
-            هل تريد التصويت ضد {selectedPlayer.displayName}؟
+            هل تريد التصويت ضد <span className="text-accent">{selectedPlayer.displayName}</span>؟
           </p>
           <div className="flex gap-3">
             <Button onClick={handleConfirmVote}>تأكيد</Button>
-            <Button variant="secondary" onClick={handleCancel}>
-              إلغاء
-            </Button>
+            <Button variant="secondary" onClick={handleCancel}>إلغاء</Button>
           </div>
         </div>
       )}
 
-      {/* Player list */}
       {!selectedTarget && (
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-2 stagger">
           {eligibleTargets.map((player) => (
             <button
               key={player.id}
               onClick={() => setSelectedTarget(player.id)}
               className={cn(
-                "w-full flex items-center justify-between p-4 rounded-xl border transition-colors",
-                "bg-foreground/5 border-foreground/10 hover:border-primary/50 hover:bg-primary/5",
-                "active:scale-[0.98] transform"
+                "w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300",
+                "bg-surface border-border-visible",
+                "hover:border-accent/30 hover:bg-accent-glow",
+                "active:scale-[0.98] cursor-pointer"
               )}
             >
-              <span className="font-medium">{player.displayName}</span>
-              <span className="text-foreground/30 text-sm">
+              <span className="font-medium text-sm">{player.displayName}</span>
+              <span className="text-foreground-dim text-xs">
                 {player.isConnected ? "متصل" : "غير متصل"}
               </span>
             </button>
@@ -118,13 +114,11 @@ export default function VotingScreen({
         </div>
       )}
 
-      {/* Vote progress */}
       <VoteProgress totalEligible={totalEligible} votedCount={votedCount} />
 
-      {/* Error message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-danger-surface border border-danger/20 rounded-2xl p-3 text-center">
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
     </div>

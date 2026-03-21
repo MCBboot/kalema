@@ -34,7 +34,7 @@ export default function ErrorMessage({ code }: ErrorMessageProps) {
   const message = ERROR_MESSAGES[code] || "حدث خطأ غير متوقع";
 
   return (
-    <div className="w-full rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm">
+    <div className="w-full rounded-2xl bg-danger-surface border border-danger/20 px-4 py-3 text-danger text-sm">
       {message}
     </div>
   );

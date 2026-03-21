@@ -21,7 +21,7 @@ export default function JoinPage() {
   const [loading, setLoading] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  useSocketEvent<{ room: Room; player: Player; token: string }>(
+  useSocketEvent<{ room: Room; player: Player; reconnectToken: string }>(
     "room_joined",
     (data) => {
       setRoom(data.room);
@@ -49,7 +49,7 @@ export default function JoinPage() {
 
   return (
     <Layout title="انضم لغرفة">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 stagger">
         <Input
           label="اسمك"
           value={displayName}
@@ -60,7 +60,7 @@ export default function JoinPage() {
         />
 
         <div className="w-full">
-          <label className="block text-sm font-medium text-foreground/70 mb-2">
+          <label className="block text-sm font-medium text-foreground-muted mb-2">
             رمز الغرفة
           </label>
           <input
@@ -68,10 +68,10 @@ export default function JoinPage() {
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="ادخل رمز الغرفة"
+            placeholder="XXXXX"
             disabled={loading}
             maxLength={8}
-            className="w-full bg-foreground/5 border border-foreground/20 rounded-xl h-12 px-4 text-left tracking-widest text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-surface border border-border-visible rounded-2xl h-12 px-4 text-center tracking-[0.4em] font-bold text-accent placeholder:text-foreground-dim placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-1 focus:ring-accent/50 focus:border-accent/30 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
           />
         </div>
 

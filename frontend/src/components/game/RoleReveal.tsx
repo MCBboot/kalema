@@ -6,9 +6,9 @@ export default function RoleReveal() {
 
   if (role === null) {
     return (
-      <div className="w-full flex items-center justify-center py-12">
-        <div className="bg-foreground/5 border border-foreground/20 rounded-2xl p-8 text-center">
-          <p className="text-lg text-foreground/50">في انتظار بدء الجولة</p>
+      <div className="w-full flex items-center justify-center py-16">
+        <div className="card-raised p-10 text-center animate-fade-up">
+          <p className="text-lg text-foreground-muted">في انتظار بدء الجولة</p>
         </div>
       </div>
     );
@@ -16,22 +16,24 @@ export default function RoleReveal() {
 
   if (role === "impostor") {
     return (
-      <div className="w-full flex items-center justify-center py-12">
-        <div className="bg-red-500/10 border-2 border-red-500/40 rounded-2xl p-8 text-center w-full max-w-sm">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-            <span className="text-red-400 text-2xl font-bold">؟</span>
+      <div className="w-full flex items-center justify-center py-16">
+        <div className="relative bg-danger-surface border-2 border-danger/30 rounded-2xl p-10 text-center w-full max-w-sm animate-fade-up pulse-danger">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-danger/15 border border-danger/30 flex items-center justify-center">
+            <span className="text-danger text-3xl font-bold">؟</span>
           </div>
-          <p className="text-3xl font-bold text-red-400">!انت المحتال</p>
+          <p className="text-4xl font-bold text-danger">!انت المحتال</p>
+          <p className="text-danger/60 mt-3 text-sm">لا أحد يعرف... بعد</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full flex items-center justify-center py-12">
-      <div className="bg-primary/10 border-2 border-primary/30 rounded-2xl p-8 text-center w-full max-w-sm">
-        <p className="text-lg text-foreground/60 mb-3">:كلمتك هي</p>
-        <p className="text-5xl font-bold text-primary">{word}</p>
+    <div className="w-full flex items-center justify-center py-16">
+      <div className="relative bg-surface border-2 border-accent/20 rounded-2xl p-10 text-center w-full max-w-sm animate-fade-up glow-accent">
+        <p className="text-sm text-foreground-muted mb-4 tracking-wide">كلمتك هي</p>
+        <div className="h-px w-12 mx-auto mb-5 bg-gradient-to-l from-transparent via-accent/40 to-transparent" />
+        <p className="text-5xl font-bold text-accent leading-tight">{word}</p>
       </div>
     </div>
   );

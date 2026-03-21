@@ -27,7 +27,7 @@ export default function Input({
   return (
     <div className={cn("w-full", className)}>
       {label && (
-        <label className="block text-sm font-medium text-foreground/70 mb-2">
+        <label className="block text-xs sm:text-sm font-medium text-foreground-muted mb-1.5 sm:mb-2">
           {label}
         </label>
       )}
@@ -39,16 +39,16 @@ export default function Input({
         disabled={disabled}
         maxLength={maxLength}
         className={cn(
-          "w-full bg-foreground/5 border border-foreground/20 rounded-xl h-12 px-4 text-right",
-          "text-foreground placeholder:text-foreground/30",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-          "transition-colors duration-200",
-          disabled && "opacity-50 cursor-not-allowed",
-          error && "border-red-500 focus:ring-red-500"
+          "w-full bg-surface-raised border border-border-visible rounded-xl sm:rounded-2xl h-11 sm:h-12 px-3 sm:px-4 text-right text-sm sm:text-base",
+          "text-foreground placeholder:text-foreground-dim",
+          "focus:outline-none focus:ring-1 focus:ring-accent/50 focus:border-accent/30",
+          "transition-all duration-300",
+          disabled && "opacity-40 cursor-not-allowed",
+          error && "border-danger/50 focus:ring-danger/50"
         )}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-500">{error}</p>
+        <p className="mt-1.5 text-xs sm:text-sm text-danger">{error}</p>
       )}
     </div>
   );
