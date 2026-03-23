@@ -1,6 +1,25 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import type { Room, Player, RoomStatus } from "@/lib/api-types";
+
+const STORAGE_KEY = "kalema_room";
+
+function loadRoom(): Room | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveRoom(room: Room | null) {
+  if (typeof window === "undefined") return;
+  if (room) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(room));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}
 
 interface RoomState {
   room: Room | null;
@@ -14,6 +33,16 @@ const RoomContext = createContext<RoomState | null>(null);
 
 export function RoomProvider({ children }: { children: ReactNode }) {
   const [room, setRoomState] = useState<Room | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setRoomState(loadRoom());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveRoom(room);
+  }, [room, hydrated]);
 
   const setRoom = useCallback((room: Room) => {
     setRoomState(room);
@@ -31,16 +60,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     setRoomState(null);
   }, []);
 
-  const state: RoomState = {
-    room,
-    setRoom,
-    updatePlayers,
-    updateRoomStatus,
-    clearRoom,
-  };
-
   return (
-    <RoomContext.Provider value={state}>
+    <RoomContext.Provider value={{ room, setRoom, updatePlayers, updateRoomStatus, clearRoom }}>
       {children}
     </RoomContext.Provider>
   );

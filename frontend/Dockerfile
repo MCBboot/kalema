@@ -1,7 +1,7 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 FROM node:22-alpine AS builder
 WORKDIR /app
@@ -13,8 +13,8 @@ COPY postcss.config.mjs ./
 COPY eslint.config.mjs ./
 COPY public ./public
 COPY src ./src
-ARG NEXT_PUBLIC_SOCKET_URL
-ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

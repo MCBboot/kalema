@@ -21,6 +21,7 @@ const clients: Socket[] = [];
 function createClient(): Promise<Socket> {
   return new Promise((resolve) => {
     const client = ioc(`http://localhost:${port}`, {
+      path: "/api/socket.io",
       transports: ["websocket"],
       forceNew: true,
     });
@@ -99,7 +100,7 @@ beforeAll(
     new Promise<void>((resolve) => {
       loadDefaultWords();
       httpServer = createServer();
-      ioServer = new Server(httpServer, { cors: { origin: "*" } });
+      ioServer = new Server(httpServer, { path: "/api/socket.io", cors: { origin: "*" } });
       registerSocketHandlers(ioServer);
       httpServer.listen(0, () => {
         const addr = httpServer.address();
