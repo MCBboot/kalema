@@ -1,16 +1,16 @@
 # Kalema — Project Specification
 
-> **Version:** 0.3.0
-> **Last updated:** 2026-03-21
-> **Status:** Requirements defined, pre-implementation
+> **Version:** 1.0.0
+> **Last updated:** 2026-03-23
+> **Status:** Implemented — multi-game platform with Impostor as first game
 
 ---
 
 ## 1. Project Overview
 
-Kalema (كلمة) is a real-time Arabic web-based multiplayer game platform. V1 includes one game: **Impostor**.
+Kalema (كلمة) is a real-time web-based multiplayer party game platform supporting Arabic + English. The platform uses a **game plugin architecture** — rooms are game-agnostic, and each game is a self-contained module.
 
-Players create or join rooms, one player is secretly assigned as the impostor (doesn't get the word), and the group votes to identify them. The entire UI is in Arabic with RTL layout.
+V1 includes one game: **Impostor** (المتخفي). Players create or join rooms, the admin selects a game, and everyone plays. The entire UI supports Arabic (RTL) and English (LTR) via i18n.
 
 This version is an **in-memory MVP** — no database, no Redis, single backend instance. All state is lost on restart by design.
 
@@ -22,11 +22,12 @@ This version is an **in-memory MVP** — no database, no Redis, single backend i
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Next.js + React + TypeScript |
+| **Frontend** | Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 |
 | **Backend** | Node.js + Socket.IO + TypeScript |
 | **Runtime** | Node.js LTS |
 | **State** | In-memory Maps (process-local) |
-| **Default words** | UTF-8 `.txt` file, one word per line |
+| **i18n** | Custom React context (ar + en) |
+| **Default words** | UTF-8 `.txt` file per game |
 
 ### 2.2 NOT in V1
 
@@ -38,111 +39,88 @@ This version is an **in-memory MVP** — no database, no Redis, single backend i
 
 ### 2.3 Deployment Model
 
-- One frontend app
+- One frontend app (Next.js custom server with WebSocket proxy)
 - One backend process
 - One server instance only
 - Self-hosted Node.js server or Docker
+- Single port exposed (26032), backend proxied internally
 
 ### 2.4 System Components
 
 ```
-┌─────────────────────┐     Socket.IO     ┌─────────────────────┐
-│   Frontend (Next.js) │ ◄──────────────► │  Backend (Node.js)   │
-│   React + TypeScript │                   │  Socket.IO + TS      │
-│   Arabic RTL UI      │                   │  In-Memory State     │
-└─────────────────────┘                   │  Word File Loader    │
-                                           └─────────────────────┘
+┌──────────────────────────┐     Socket.IO     ┌──────────────────────────┐
+│  Frontend (Next.js:26032) │ ◄──────────────► │  Backend (Node.js:26033)  │
+│  React + TypeScript       │    (proxied)      │  Socket.IO + TS          │
+│  i18n (ar/en)             │                   │  Game Plugin System      │
+│  Game Plugin Rendering    │                   │  In-Memory State         │
+└──────────────────────────┘                   └──────────────────────────┘
 ```
 
 ### 2.5 Backend Folder Structure
 
 ```
-backend/
-  src/
-    index.ts
-    server.ts
-    __tests__/
-      gameLifecycle.test.ts
-    socket/
-      registerSocketHandlers.ts
-      events.ts
-    config/
-      env.ts
-      constants.ts
-    data/
-      default-words.txt
-    models/
-      room.ts
-      player.ts
-      round.ts
-      vote.ts
-    services/
-      roomService.ts
-      playerService.ts
-      adminService.ts
-      wordService.ts
-      roundService.ts
-      voteService.ts
-      reconnectService.ts
-      __tests__/
-        roomService.test.ts
-        playerService.test.ts
-        adminService.test.ts
-        wordService.test.ts
-        roundService.test.ts
-        voteService.test.ts
-        reconnectService.test.ts
-    store/
-      memoryStore.ts
-    validators/
-      roomValidators.ts
-      playerValidators.ts
-      eventValidators.ts
-      __tests__/
-        roomValidators.test.ts
-        playerValidators.test.ts
-        eventValidators.test.ts
-    utils/
-      id.ts
-      random.ts
-      fileLoader.ts
-      logger.ts
-      __tests__/
-        fileLoader.test.ts
-        id.test.ts
-        random.test.ts
-    jobs/
-      cleanupJob.ts
-      __tests__/
-        cleanupJob.test.ts
+backend/src/
+  index.ts                          # Entry: register games, start server
+  server.ts                         # HTTP + Socket.IO setup
+  games/                            # ★ Game plugin system
+    types.ts                        # GameDefinition, GameState, GameEventContext
+    registry.ts                     # registerGame(), getGame(), getAllGames()
+    impostor/                       # Impostor game plugin
+      index.ts                      # GameDefinition implementation
+      state.ts                      # ImpostorGameState, ImpostorRound, Vote
+      round.ts                      # startRound(), advancePhase(), stopRound()
+      vote.ts                       # submitVote(), calculateResult()
+      words.ts                      # loadImpostorWords(), addWord()
+      events.ts                     # impostor:* event constants
+      data/default-words.txt        # 150 Arabic words
+  socket/
+    registerSocketHandlers.ts       # Core room events
+    gameDispatcher.ts               # Routes game-prefixed events to plugins
+    events.ts                       # Core event names + payloads
+  models/
+    room.ts                         # Room (game-agnostic)
+    player.ts                       # Player types + factories
+  services/
+    roomService.ts                  # Room CRUD, lock/unlock, selectGame, startGame
+    playerService.ts                # Player state helpers
+    adminService.ts                 # Admin controls
+    reconnectService.ts             # Token-based session recovery
+  store/memoryStore.ts              # rooms, socketToSession, reconnectTokens Maps
+  validators/                       # Payload validation
+  config/                           # Constants + env
+  utils/                            # id, random, logger, fileLoader
+  jobs/                             # Cleanup background job
 ```
 
 ### 2.6 Frontend Folder Structure
 
 ```
-frontend/
-  src/
-    app/ or pages/
-    components/
-      room/
-      admin/
-      game/
-      shared/
-    lib/
-      socket.ts
-      api-types.ts
-    store/
-      connectionStore.ts
-      roomStore.ts
-      playerStore.ts
-      secretStore.ts
-    hooks/
-      useSocketEvents.ts
-      useReconnect.ts
-    utils/
-      rtl.ts
-      formatters.ts
-    styles/
+frontend/src/
+  app/                              # Pages: /, /create, /join, /room/[code]
+    game-init.tsx                   # Registers all game plugins at startup
+  i18n/                             # ★ Internationalization
+    context.tsx                     # I18nProvider + useTranslation()
+    types.ts                        # Locale, Direction types
+    locales/ar.json                 # Core Arabic translations (~90 keys)
+    locales/en.json                 # Core English translations (~90 keys)
+  games/                            # ★ Frontend game plugins
+    types.ts                        # GameRegistration, GameComponentProps
+    registry.ts                     # Frontend game registry
+    impostor/                       # Impostor game frontend
+      index.ts                      # Registration + translation loading
+      components/ImpostorGame.tsx   # Main game orchestrator (all phases)
+      store/impostorStore.tsx       # Role/word state
+      locales/ar.json               # Impostor Arabic translations
+      locales/en.json               # Impostor English translations
+  components/
+    room/                           # PlayerList, RoomCode, GamePicker
+    shared/                         # Button, Input, ErrorMessage, Layout, Menu, Toast, ReconnectBanner
+  store/                            # React context: roomStore, playerStore, connectionStore, themeStore
+  hooks/                            # useSocketEvents, useReconnect, useGameNotifications, usePushNotifications
+  lib/
+    api-types.ts                    # Shared types + core/impostor event constants
+    socket.ts                       # Socket.IO client singleton
+  utils/                            # rtl.ts, formatters.ts
 ```
 
 ---
@@ -151,27 +129,26 @@ frontend/
 
 | # | Feature | Status | File |
 |---|---------|--------|------|
-| 1 | Room creation & joining | planned | `features/rooms.md` |
-| 2 | Player management (online + offline) | planned | `features/players.md` |
-| 3 | Admin system (controls, modes, transfer) | planned | `features/admin.md` |
-| 4 | Word management (file + runtime add) | planned | `features/words.md` |
-| 5 | Game engine (rounds, roles, phases) | planned | `features/game-engine.md` |
-| 6 | Voting system | planned | `features/voting.md` |
-| 7 | Real-time communication (Socket.IO events) | planned | `features/realtime.md` |
-| 8 | Reconnect & session recovery | planned | `features/reconnect.md` |
-| 9 | Cleanup & memory management | planned | `features/cleanup.md` |
-| 10 | Arabic RTL UI | planned | `features/arabic-ui.md` |
-| 11 | Security & validation | planned | `features/security.md` |
-| 12 | Test cases (unit, integration, E2E) | planned | `features/testing.md` |
+| 1 | Room creation & joining | implemented | `features/rooms.md` |
+| 2 | Player management (online + offline) | implemented | `features/players.md` |
+| 3 | Admin system (controls, modes, transfer) | implemented | `features/admin.md` |
+| 4 | Game plugin architecture | implemented | `features/game-plugin.md` |
+| 5 | Impostor game (rounds, roles, phases, voting) | implemented | `features/impostor-game.md` |
+| 6 | Real-time communication (Socket.IO events) | implemented | `features/realtime.md` |
+| 7 | Reconnect & session recovery | implemented | `features/reconnect.md` |
+| 8 | Cleanup & memory management | implemented | `features/cleanup.md` |
+| 9 | i18n — Arabic + English | implemented | `features/i18n.md` |
+| 10 | Security & validation | implemented | `features/security.md` |
+| 11 | Test cases (unit, integration) | implemented | `features/testing.md` |
 
 ---
 
 ## 4. Type Models
 
-### Enums
+### Core Enums
 
 ```ts
-type RoomStatus = "WAITING" | "ROLE_REVEAL" | "DISCUSSION" | "VOTING" | "RESULT" | "STOPPED";
+type RoomStatus = "WAITING" | "LOCKED" | "PLAYING";
 type AdminMode = "ADMIN_ONLY" | "ADMIN_PLAYER";
 type PlayerType = "ONLINE" | "OFFLINE";
 ```
@@ -190,30 +167,7 @@ interface Player {
 }
 ```
 
-### Vote
-
-```ts
-interface Vote {
-  voterPlayerId: string;
-  targetPlayerId: string;
-  submittedAt: number;
-}
-```
-
-### Round
-
-```ts
-interface Round {
-  id: string;
-  word: string;
-  impostorPlayerId: string;
-  phase: "ROLE_REVEAL" | "DISCUSSION" | "VOTING" | "RESULT";
-  votes: Vote[];
-  startedAt: number;
-}
-```
-
-### Room
+### Room (Game-Agnostic)
 
 ```ts
 interface Room {
@@ -225,19 +179,46 @@ interface Room {
   adminPlayerId: string;
   adminMode: AdminMode;
   players: Player[];
-  words: string[];
-  currentRound: Round | null;
+  selectedGame: string | null;   // game plugin id
+  gameState: GameState | null;   // opaque game state
 }
 ```
 
-### Reconnect Session
+### GameState (Plugin Interface)
 
 ```ts
-interface ReconnectSession {
-  token: string;
-  roomId: string;
-  playerId: string;
-  expiresAt: number;
+interface GameState {
+  gameId: string;
+  phase: string;
+  data: unknown;
+}
+
+interface GameDefinition {
+  id: string;
+  minPlayers: number;
+  maxPlayers: number;
+  createGameState(room: Room, config?: unknown): GameState;
+  handleEvent(ctx: GameEventContext, eventName: string, payload: unknown): void;
+  getPublicState(state: GameState): unknown;
+  getPlayerPrivateData(state: GameState, playerId: string): unknown | null;
+  getEventNames(): string[];
+  getEligibleParticipants(room: Room): Player[];
+  onStop?(state: GameState): void;
+}
+```
+
+### Impostor-Specific Types
+
+```ts
+type ImpostorPhase = "CHOOSING" | "ROLE_REVEAL" | "DISCUSSION" | "VOTING" | "RESULT";
+
+interface ImpostorGameState extends GameState {
+  gameId: "impostor";
+  phase: ImpostorPhase;
+  data: {
+    words: string[];
+    currentRound: ImpostorRound | null;
+  };
 }
 ```
 
@@ -253,7 +234,7 @@ const reconnectTokens = new Map<string, ReconnectSession>();
 
 ## 5. Socket Event Contract
 
-### Client → Server
+### Core: Client → Server
 
 | Event | Purpose |
 |-------|---------|
@@ -261,50 +242,66 @@ const reconnectTokens = new Map<string, ReconnectSession>();
 | `join_room` | Join existing room by code |
 | `leave_room` | Leave room |
 | `reconnect_session` | Reconnect with token |
-| `start_game` | Admin starts a round |
+| `lock_room` | Lock room (WAITING → LOCKED) |
+| `unlock_room` | Unlock room (LOCKED → WAITING) |
+| `select_game` | Admin selects a game plugin |
+| `start_game` | Admin starts the selected game |
 | `stop_game` | Admin stops game |
 | `transfer_admin` | Admin transfers role |
 | `kick_player` | Admin removes player |
 | `add_offline_player` | Admin adds offline player |
 | `remove_offline_player` | Admin removes offline player |
-| `add_word` | Admin adds a word |
-| `submit_vote` | Player submits vote |
-| `advance_phase` | Admin advances phase (if manual) |
 
-### Server → Client
+### Core: Server → Client
 
 | Event | Purpose |
 |-------|---------|
 | `room_created` | Room creation confirmed |
 | `room_joined` | Join confirmed |
-| `room_state_updated` | Full/delta room state |
+| `room_state_updated` | Full room state update |
 | `player_list_updated` | Player list changed |
 | `admin_changed` | Admin transferred |
-| `game_started` | Round started |
-| `phase_changed` | Phase transition |
-| `role_assigned` | Private role delivery |
-| `vote_state_updated` | Vote progress |
-| `round_result` | Round outcome |
+| `game_selected` | Game plugin selected |
+| `game_started` | Game started (with public game state) |
 | `game_stopped` | Game stopped by admin |
-| `word_added` | Word added to room |
+| `game_state_updated` | Game state changed |
+| `game_player_data` | Private player data from game plugin |
 | `action_rejected` | Structured error |
 | `session_recovered` | Reconnect success |
 | `player_disconnected` | Player lost connection |
 | `player_reconnected` | Player reconnected |
 
+### Impostor Game Events
+
+| Event | Direction | Purpose |
+|-------|-----------|---------|
+| `impostor:start_round` | C→S | Start a new round |
+| `impostor:advance_phase` | C→S | Advance game phase |
+| `impostor:submit_vote` | C→S | Submit vote |
+| `impostor:add_word` | C→S | Add word to word list |
+| `impostor:role_assigned` | S→C | Private role delivery |
+| `impostor:phase_changed` | S→C | Phase transition |
+| `impostor:vote_state_updated` | S→C | Vote progress |
+| `impostor:round_result` | S→C | Round outcome |
+| `impostor:word_added` | S→C | Word added |
+
 ---
 
 ## 6. Game State Machine
 
-```
-WAITING ──► ROLE_REVEAL ──► DISCUSSION ──► VOTING ──► RESULT ──► WAITING (new round)
-   ▲                                                                │
-   └────────────────────────────────────────────────────────────────┘
+### Room Status
 
-Any active phase ──► STOPPED (admin override)
+```
+WAITING ──► LOCKED ──► PLAYING
+   ▲           │
+   └───────────┘ (unlock)
 ```
 
-Illegal transitions must be rejected.
+### Impostor Game Phases (within PLAYING)
+
+```
+CHOOSING ──► ROLE_REVEAL ──► DISCUSSION ──► VOTING ──► RESULT ──► CHOOSING
+```
 
 ---
 
@@ -312,114 +309,42 @@ Illegal transitions must be rejected.
 
 1. Exactly one admin per room at all times
 2. Admin mode: `ADMIN_ONLY` (observer) or `ADMIN_PLAYER` (plays too)
-3. Admin can add words only — no edit, no delete
-4. Default words from `.txt` file, each room gets its own copy (`[...defaultWords]`)
-5. One impostor per round
-6. All non-impostors get the same word
-7. Only admin can start/stop game
-8. Only admin can add offline players, kick players, transfer admin
-9. Offline players are valid participants without socket connections
-10. All state lost on restart — by design
-11. Reconnect works only while same process is alive
-12. Reconnect tokens expire after 5–10 minutes
-13. Rooms cleaned up after 30–60 minutes of inactivity
+3. Rooms are game-agnostic — `selectedGame` and `gameState` hold game-specific data
+4. Game plugins handle their own events, state, and private data
+5. Only admin can lock/unlock room, select game, start/stop game
+6. Only admin can add offline players, kick players, transfer admin
+7. Offline players are valid participants without socket connections
+8. All state lost on restart — by design
+9. Reconnect works only while same process is alive
+10. Reconnect tokens expire after 5 minutes
+11. Rooms cleaned up after 30 minutes of inactivity
+12. Game-specific rules (e.g., impostor: one impostor per round, all non-impostors get same word)
 
 ---
 
 ## 8. Security Model
 
 - **Server-authoritative**: backend is sole source of truth for all game state
-- **Role secrecy**: word sent only to non-impostors, impostor status only to impostor
-- **Never broadcast** private role data to entire room
-- **Validate everything**: room existence, player membership, admin privilege, phase, payload format
-- **Offline player compromise**: admin sees offline player roles (unavoidable with shared device)
+- **Game isolation**: game events are namespaced and validated against `room.selectedGame`
+- **Role secrecy**: private player data (from `getPlayerPrivateData`) sent only to that player
+- **Never broadcast** private game data to entire room
+- **Validate everything**: room existence, player membership, admin privilege, game match, phase, payload
 
 ---
 
-## 9. Performance Targets
+## 9. i18n System
 
-- Under 300ms perceived update time in normal conditions
-- Full room snapshot on join/reconnect only
-- Delta updates for routine changes (player join/leave, word added, phase change, vote progress)
-- Support 50+ players per room without redesign
-- Memoize player list rows, avoid full re-render on every update
-- Searchable/grouped player list for large rooms
-
----
-
-## 10. Error Handling
-
-Backend returns structured errors for: invalid room code, duplicate name, unauthorized action, invalid phase transition, word validation failure, insufficient players, no words, invalid reconnect token, invalid vote target.
-
-Frontend maps all errors to Arabic user-facing messages.
+- **Locales**: Arabic (ar, default) + English (en)
+- **Implementation**: React context (`I18nProvider`) + `useTranslation()` hook
+- **Storage**: locale persisted to localStorage (`kalema_locale`)
+- **Layout**: `dir` attribute toggles `rtl`/`ltr` based on locale
+- **Game translations**: each game module registers its own translations
+- **Interpolation**: `t("key", { name: "value" })` → `"Hello, value"`
+- **Fallback**: missing keys fall back to Arabic
 
 ---
 
-## 11. Logging
-
-Backend logs: room create/delete, player join/leave, disconnect/reconnect, admin transfer, kick, offline player add/remove, word add, game start/stop, phase transitions, vote completion, cleanup actions, rejected actions.
-
----
-
-## 12. UI Screens
-
-- Home page
-- Create room flow
-- Join room flow
-- Room lobby
-- Admin control panel
-- Word add panel
-- Offline player control UI
-- Role reveal screen
-- Discussion state screen
-- Voting screen
-- Result screen
-- Reconnect/recovery UI
-
-All screens: Arabic text, RTL layout, Arabic-compatible font stack.
-
----
-
-## 13. Acceptance Criteria
-
-- [x] Tech stack: Next.js frontend, Node.js + Socket.IO backend
-- [ ] All room/game state in memory only
-- [ ] Default words from `.txt` file, one per line
-- [ ] Each room gets its own copied word list
-- [ ] Admin can add words (not edit/delete)
-- [ ] Admin can choose observer or player mode
-- [ ] Admin can add offline players
-- [ ] Admin can kick players
-- [ ] Admin can transfer admin role
-- [ ] Reconnect works while server alive
-- [ ] All state lost on restart
-- [ ] 25+ players per room
-- [ ] Backend validates all critical actions
-- [ ] Role secrecy preserved for online players
-- [ ] UI is Arabic and RTL
-
----
-
-## 14. Active Goals
-
-- [ ] Set up monorepo structure (frontend + backend)
-- [ ] Create package.json, tsconfig, scripts
-- [ ] Define Socket.IO event contract with payload schemas
-- [ ] Build backend services skeleton
-- [ ] Build frontend screens skeleton
-
----
-
-## 15. Conventions
-
-- Follow rules in `CLAUDE.md`
-- One feature = one file in `.agent/features/`
-- All spec changes logged in `CHANGELOG.md`
-- Significant updates get versioned snapshot in `.agent/versions/`
-
----
-
-## 16. Agent Coordination Rules
+## 10. Agent Coordination Rules
 
 When multiple agents work simultaneously:
 
@@ -429,33 +354,33 @@ When multiple agents work simultaneously:
 4. **Update SPEC.md** when adding new features or changing architecture
 5. **Log changes** in `CHANGELOG.md`
 
-### Task File Format
-
-Create `.agent/tasks/{agent-id}-{task-name}.md`:
-
-```markdown
----
-agent: {agent-id}
-task: {short description}
-status: in_progress | completed | blocked
-started: {date}
-files_touched:
-  - path/to/file1
-  - path/to/file2
 ---
 
-## What I'm doing
-{description}
+## How to Add a New Game
 
-## Blockers
-{any blockers or none}
-```
+### Backend
 
----
+1. Create `backend/src/games/{game-name}/` with:
+   - `index.ts` — implement `GameDefinition` interface
+   - `state.ts` — game-specific types
+   - `events.ts` — `{game-name}:*` event constants
+   - Additional files as needed (round logic, voting, etc.)
+2. Register in `backend/src/index.ts`:
+   ```ts
+   import { newGame, initNewGame } from "./games/newgame/index.js";
+   initNewGame();
+   registerGame(newGame);
+   ```
 
-## How to Add New Requirements
+### Frontend
 
-1. Add a one-line entry to the **Features** table (Section 3)
-2. Create a detailed feature file in `.agent/features/{feature-name}.md`
-3. Add a changelog entry in `.agent/CHANGELOG.md`
-4. If major change, save snapshot to `.agent/versions/v{X.Y.Z}.md`
+1. Create `frontend/src/games/{game-name}/` with:
+   - `components/{GameName}Game.tsx` — main game component
+   - `store/` — game-specific state (if needed)
+   - `locales/ar.json` + `en.json` — translations
+   - `index.ts` — register game + translations
+2. Register in `frontend/src/app/game-init.tsx`:
+   ```ts
+   import { registerNewGame } from "@/games/newgame/index";
+   registerNewGame();
+   ```

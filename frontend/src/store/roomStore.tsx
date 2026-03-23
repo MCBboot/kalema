@@ -23,6 +23,7 @@ function saveRoom(room: Room | null) {
 
 interface RoomState {
   room: Room | null;
+  hydrated: boolean;
   setRoom: (room: Room) => void;
   updatePlayers: (players: Player[]) => void;
   updateRoomStatus: (status: RoomStatus) => void;
@@ -61,7 +62,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <RoomContext.Provider value={{ room, setRoom, updatePlayers, updateRoomStatus, clearRoom }}>
+    <RoomContext.Provider value={{ room, hydrated, setRoom, updatePlayers, updateRoomStatus, clearRoom }}>
       {children}
     </RoomContext.Provider>
   );

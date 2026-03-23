@@ -4,14 +4,20 @@ import {
   joinRoom,
   leaveRoom,
 } from "../roomService.js";
-import { loadDefaultWords, getDefaultWords } from "../wordService.js";
 import {
   getAllRooms,
   getSessionBySocket,
 } from "../../store/memoryStore.js";
+import { registerGame } from "../../games/registry.js";
+import { impostorGame, initImpostorGame } from "../../games/impostor/index.js";
 
-// Load words once before tests
-loadDefaultWords();
+// Register impostor game for tests that need it
+try {
+  initImpostorGame();
+  registerGame(impostorGame);
+} catch {
+  // Already registered
+}
 
 function clearStore(): void {
   const rooms = getAllRooms();
@@ -23,32 +29,20 @@ describe("roomService", () => {
     clearStore();
   });
 
-  it("R1: createRoom creates room with correct data, creator is admin, status WAITING, words copied", () => {
-    const { room, player } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+  it("R1: createRoom creates room with correct data, creator is admin, status WAITING", () => {
+    const { room, player } = createRoom("Alice", "socket-1");
 
     expect(room.status).toBe("WAITING");
     expect(room.adminPlayerId).toBe(player.id);
-    expect(room.adminMode).toBe("ADMIN_PLAYER");
     expect(player.isAdmin).toBe(true);
     expect(player.displayName).toBe("Alice");
     expect(room.players).toHaveLength(1);
-    expect(room.words.length).toBeGreaterThan(0);
-  });
-
-  it("R2: createRoom with ADMIN_ONLY mode sets adminMode correctly", () => {
-    const { room } = createRoom("Bob", "ADMIN_ONLY", "socket-2");
-    expect(room.adminMode).toBe("ADMIN_ONLY");
-  });
-
-  it("R3: words list is a copy not reference", () => {
-    const { room } = createRoom("Charlie", "ADMIN_PLAYER", "socket-3");
-    const defaultWords = getDefaultWords();
-    room.words.push("extra-word");
-    expect(defaultWords).not.toContain("extra-word");
+    expect(room.selectedGame).toBeNull();
+    expect(room.gameState).toBeNull();
   });
 
   it("R4: joinRoom adds player, list grows", () => {
-    const { room } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+    const { room } = createRoom("Alice", "socket-1");
     const { room: updatedRoom, player: newPlayer } = joinRoom(room.code, "Bob", "socket-2");
 
     expect(updatedRoom.players).toHaveLength(2);
@@ -61,12 +55,12 @@ describe("roomService", () => {
   });
 
   it("R6: joinRoom with duplicate name throws error", () => {
-    const { room } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+    const { room } = createRoom("Alice", "socket-1");
     expect(() => joinRoom(room.code, "Alice", "socket-2")).toThrow("DUPLICATE_NAME");
   });
 
   it("R7: leaveRoom non-admin removes player", () => {
-    const { room } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+    const { room } = createRoom("Alice", "socket-1");
     joinRoom(room.code, "Bob", "socket-2");
 
     const result = leaveRoom("socket-2");
@@ -78,7 +72,7 @@ describe("roomService", () => {
   });
 
   it("R8: leaveRoom admin auto-transfers admin", () => {
-    const { room } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+    const { room } = createRoom("Alice", "socket-1");
     joinRoom(room.code, "Bob", "socket-2");
 
     const result = leaveRoom("socket-1");
@@ -92,7 +86,7 @@ describe("roomService", () => {
   });
 
   it("R9: leaveRoom last player deletes room", () => {
-    const { room } = createRoom("Alice", "ADMIN_PLAYER", "socket-1");
+    const { room } = createRoom("Alice", "socket-1");
     const roomId = room.id;
 
     const result = leaveRoom("socket-1");

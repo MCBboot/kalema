@@ -9,6 +9,28 @@ Format: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## v1.0.0 — 2026-03-23
+
+- **BREAKING**: Restructured into multi-game platform with game plugin architecture
+- Room model refactored: `RoomStatus` is now `WAITING | LOCKED | PLAYING` (was 7 values)
+- Room model: removed `words` and `currentRound`, added `selectedGame` and `gameState`
+- Created `backend/src/games/` plugin system with `GameDefinition` interface, registry, and dispatcher
+- Extracted impostor game into `backend/src/games/impostor/` (round, vote, words, events, state)
+- Split socket handler monolith (738 lines) into `roomHandlers` + `gameDispatcher`
+- Game events are now namespaced: `impostor:start_round`, `impostor:advance_phase`, etc.
+- New core events: `select_game`, `game_selected`, `lock_room`, `unlock_room`
+- Added `impostor:start_round` event for starting rounds within the impostor game
+- Created frontend i18n system: `I18nProvider`, `useTranslation()`, ar.json + en.json (~90 keys each)
+- Created frontend game plugin system: `GameRegistration`, `GameComponentProps`, registry
+- Built `ImpostorGame.tsx` — single orchestrator component for all impostor phases
+- Created `GamePicker.tsx` — game selection grid for locked rooms
+- Created `impostorStore.tsx` — replaces old `secretStore.tsx`
+- Room page now has 3 states: WAITING (lobby), LOCKED (game picker), PLAYING (game plugin)
+- Replaced hardcoded Arabic strings with `t()` calls in home page, room page, notifications
+- Deleted old files: `roundService`, `voteService`, `wordService`, `secretStore`, `components/game/`, `components/admin/`
+- Updated all tests (90 passing across 11 files)
+- Updated CLAUDE.md, README.md, SPEC.md with new architecture docs
+
 ## v0.3.0 — 2026-03-21
 
 - Added comprehensive test cases specification (`features/testing.md`)

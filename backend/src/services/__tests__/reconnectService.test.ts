@@ -49,7 +49,7 @@ describe("reconnectService", () => {
   });
 
   it("RC2: recoverSession with valid token rebinds player and returns room/player", () => {
-    const room = createRoomModel("room-1", "ABCDE", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-1", "ABCDE", "player-1");
     const player = createOnlinePlayer("player-1", "Alice", "old-socket");
     player.isAdmin = true;
     player.isConnected = false;
@@ -85,7 +85,7 @@ describe("reconnectService", () => {
   it("RC3: recoverSession with expired token returns null", () => {
     vi.useFakeTimers({ now: 1000 });
 
-    const room = createRoomModel("room-1", "ABCDE", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-1", "ABCDE", "player-1");
     const player = createOnlinePlayer("player-1", "Alice", "old-socket");
     player.isConnected = false;
     player.socketId = null;
@@ -119,7 +119,7 @@ describe("reconnectService", () => {
   });
 
   it("RC6: recoverSession when player no longer in room returns null", () => {
-    const room = createRoomModel("room-1", "ABCDE", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-1", "ABCDE", "player-1");
     // Room exists but player-2 is not in it
     const player = createOnlinePlayer("player-1", "Alice", "socket-1");
     room.players.push(player);

@@ -1,37 +1,34 @@
-import { AdminMode, Room, RoomStatus } from "../models/room.js";
+import { Room, RoomStatus } from "../models/room.js";
 import { Player } from "../models/player.js";
-import { Vote } from "../models/vote.js";
 
-// ── Client-to-Server Event Names ──
+// ── Client-to-Server Event Names (Core) ──
 
 export const CREATE_ROOM = "create_room" as const;
 export const JOIN_ROOM = "join_room" as const;
 export const LEAVE_ROOM = "leave_room" as const;
 export const RECONNECT_SESSION = "reconnect_session" as const;
-export const START_GAME = "start_game" as const;
-export const STOP_GAME = "stop_game" as const;
 export const TRANSFER_ADMIN = "transfer_admin" as const;
 export const KICK_PLAYER = "kick_player" as const;
 export const ADD_OFFLINE_PLAYER = "add_offline_player" as const;
 export const REMOVE_OFFLINE_PLAYER = "remove_offline_player" as const;
-export const ADD_WORD = "add_word" as const;
-export const SUBMIT_VOTE = "submit_vote" as const;
-export const ADVANCE_PHASE = "advance_phase" as const;
+export const LOCK_ROOM = "lock_room" as const;
+export const UNLOCK_ROOM = "unlock_room" as const;
+export const SELECT_GAME = "select_game" as const;
+export const START_GAME = "start_game" as const;
+export const STOP_GAME = "stop_game" as const;
 
-// ── Server-to-Client Event Names ──
+// ── Server-to-Client Event Names (Core) ──
 
 export const ROOM_CREATED = "room_created" as const;
 export const ROOM_JOINED = "room_joined" as const;
 export const ROOM_STATE_UPDATED = "room_state_updated" as const;
 export const PLAYER_LIST_UPDATED = "player_list_updated" as const;
 export const ADMIN_CHANGED = "admin_changed" as const;
+export const GAME_SELECTED = "game_selected" as const;
 export const GAME_STARTED = "game_started" as const;
-export const PHASE_CHANGED = "phase_changed" as const;
-export const ROLE_ASSIGNED = "role_assigned" as const;
-export const VOTE_STATE_UPDATED = "vote_state_updated" as const;
-export const ROUND_RESULT = "round_result" as const;
 export const GAME_STOPPED = "game_stopped" as const;
-export const WORD_ADDED = "word_added" as const;
+export const GAME_STATE_UPDATED = "game_state_updated" as const;
+export const GAME_PLAYER_DATA = "game_player_data" as const;
 export const ACTION_REJECTED = "action_rejected" as const;
 export const SESSION_RECOVERED = "session_recovered" as const;
 export const PLAYER_DISCONNECTED = "player_disconnected" as const;
@@ -41,8 +38,6 @@ export const PLAYER_RECONNECTED = "player_reconnected" as const;
 
 export interface CreateRoomRequest {
   displayName: string;
-  adminMode: AdminMode;
-  words: string[];
 }
 
 export interface JoinRoomRequest {
@@ -58,8 +53,12 @@ export interface ReconnectSessionRequest {
   token: string;
 }
 
+export interface SelectGameRequest {
+  gameId: string;
+}
+
 export interface StartGameRequest {
-  roomId: string;
+  config?: unknown;
 }
 
 export interface StopGameRequest {
@@ -84,20 +83,6 @@ export interface AddOfflinePlayerRequest {
 export interface RemoveOfflinePlayerRequest {
   roomId: string;
   playerId: string;
-}
-
-export interface AddWordRequest {
-  roomId: string;
-  word: string;
-}
-
-export interface SubmitVoteRequest {
-  roomId: string;
-  targetPlayerId: string;
-}
-
-export interface AdvancePhaseRequest {
-  roomId: string;
 }
 
 // ── Server-to-Client Payloads ──
@@ -126,47 +111,38 @@ export interface AdminChangedPayload {
   newAdminPlayerId: string;
 }
 
+export interface GameSelectedPayload {
+  gameId: string;
+}
+
 export interface GameStartedPayload {
   roomStatus: RoomStatus;
-}
-
-export interface PhaseChangedPayload {
-  phase: "ROLE_REVEAL" | "DISCUSSION" | "VOTING" | "RESULT";
-}
-
-export interface RoleAssignedPayload {
-  role: "IMPOSTOR" | "CITIZEN";
-  word: string | null;
-}
-
-export interface VoteStateUpdatedPayload {
-  votes: Vote[];
-  totalExpected: number;
-}
-
-export interface RoundResultPayload {
-  impostorPlayerId: string;
-  impostorCaught: boolean;
-  votes: Vote[];
+  gameState: unknown;
 }
 
 export interface GameStoppedPayload {
   reason: string;
 }
 
-export interface WordAddedPayload {
-  words: string[];
+export interface GameStateUpdatedPayload {
+  gameState: unknown;
+}
+
+export interface GamePlayerDataPayload {
+  data: unknown;
 }
 
 export interface ActionRejectedPayload {
-  event: string;
-  reason: string;
+  event?: string;
+  code: string;
+  message: string;
 }
 
 export interface SessionRecoveredPayload {
   room: Room;
   playerId: string;
   reconnectToken: string;
+  gamePlayerData?: unknown;
 }
 
 export interface PlayerDisconnectedPayload {

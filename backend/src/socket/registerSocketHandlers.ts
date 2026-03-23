@@ -3,29 +3,25 @@ import {
   CREATE_ROOM,
   JOIN_ROOM,
   LEAVE_ROOM,
+  RECONNECT_SESSION,
   TRANSFER_ADMIN,
   KICK_PLAYER,
   ADD_OFFLINE_PLAYER,
   REMOVE_OFFLINE_PLAYER,
-  ADD_WORD,
+  LOCK_ROOM,
+  UNLOCK_ROOM,
+  SELECT_GAME,
   START_GAME,
   STOP_GAME,
-  ADVANCE_PHASE,
   ROOM_CREATED,
   ROOM_JOINED,
   PLAYER_LIST_UPDATED,
   ADMIN_CHANGED,
   ROOM_STATE_UPDATED,
-  WORD_ADDED,
-  ACTION_REJECTED,
+  GAME_SELECTED,
   GAME_STARTED,
-  PHASE_CHANGED,
-  ROLE_ASSIGNED,
   GAME_STOPPED,
-  SUBMIT_VOTE,
-  VOTE_STATE_UPDATED,
-  ROUND_RESULT,
-  RECONNECT_SESSION,
+  ACTION_REJECTED,
   SESSION_RECOVERED,
   PLAYER_DISCONNECTED,
   PLAYER_RECONNECTED,
@@ -35,32 +31,23 @@ import {
   createRoom,
   joinRoom,
   leaveRoom,
+  lockRoom,
+  unlockRoom,
+  selectGame,
+  startGame,
+  stopGame,
   getRoomSnapshot,
 } from "../services/roomService.js";
-
 import {
   transferAdmin,
   kickPlayer,
   addOfflinePlayer,
   removeOfflinePlayer,
 } from "../services/adminService.js";
-import { addWord } from "../services/wordService.js";
-import {
-  startRound,
-  stopGame,
-  advancePhase,
-  getEligibleParticipants,
-} from "../services/roundService.js";
-import {
-  submitVote,
-  submitOfflineVote,
-  checkAllVoted,
-  calculateResult,
-} from "../services/voteService.js";
+import { getGame } from "../games/registry.js";
 import {
   getSessionBySocket,
   getRoom,
-  setSession,
   deleteSession,
 } from "../store/memoryStore.js";
 import {
@@ -68,11 +55,29 @@ import {
   recoverSession,
 } from "../services/reconnectService.js";
 import { markDisconnected, findPlayerById } from "../services/playerService.js";
+import { registerGameHandlers } from "./gameDispatcher.js";
 import { logInfo, logError } from "../utils/logger.js";
+
+function emitPlayerList(io: Server, room: { id: string; players: Array<{ id: string; displayName: string; type: string; isAdmin: boolean; isConnected: boolean }> }): void {
+  io.to(room.id).emit(PLAYER_LIST_UPDATED, {
+    players: room.players.map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      type: p.type,
+      isAdmin: p.isAdmin,
+      isConnected: p.isConnected,
+    })),
+  });
+}
 
 export function registerSocketHandlers(io: Server): void {
   io.on("connection", (socket: Socket) => {
     logInfo("Socket", `Client connected: ${socket.id}`);
+
+    // Register game-specific event handlers
+    registerGameHandlers(io, socket);
+
+    // ── Room Management ──
 
     socket.on(CREATE_ROOM, (payload: unknown) => {
       const result = validateCreateRoom(payload);
@@ -84,12 +89,10 @@ export function registerSocketHandlers(io: Server): void {
       try {
         const { room, player } = createRoom(
           result.data.displayName,
-          result.data.adminMode,
           socket.id,
         );
 
         socket.join(room.id);
-
         const reconnectToken = createSession(room.id, player.id);
 
         socket.emit(ROOM_CREATED, {
@@ -102,7 +105,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create room";
         logError("Socket", `create_room error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -121,7 +124,6 @@ export function registerSocketHandlers(io: Server): void {
         );
 
         socket.join(room.id);
-
         const reconnectToken = createSession(room.id, player.id);
 
         socket.emit(ROOM_JOINED, {
@@ -130,21 +132,12 @@ export function registerSocketHandlers(io: Server): void {
           reconnectToken,
         });
 
-        io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-          players: room.players.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            type: p.type,
-            isAdmin: p.isAdmin,
-            isConnected: p.isConnected,
-          })),
-        });
-
+        emitPlayerList(io, room);
         logInfo("Socket", `Player ${player.displayName} joined room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to join room";
         logError("Socket", `join_room error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -173,16 +166,14 @@ export function registerSocketHandlers(io: Server): void {
         }
 
         const { room, player, newToken } = result;
-
         socket.join(room.id);
 
-        // Build role info if game is active
-        let role: { role: string; word?: string } | undefined;
-        if (room.currentRound) {
-          if (player.id === room.currentRound.impostorPlayerId) {
-            role = { role: "impostor" };
-          } else {
-            role = { role: "normal", word: room.currentRound.word };
+        // Build game-specific private data if game is active
+        let gamePlayerData: unknown = undefined;
+        if (room.selectedGame && room.gameState) {
+          const game = getGame(room.selectedGame);
+          if (game) {
+            gamePlayerData = game.getPlayerPrivateData(room.gameState, player.id);
           }
         }
 
@@ -191,31 +182,29 @@ export function registerSocketHandlers(io: Server): void {
           playerId: player.id,
           displayName: player.displayName,
           reconnectToken: newToken,
-          role,
+          gamePlayerData,
         });
+
+        // Also emit game_player_data separately so the game component picks it up
+        if (gamePlayerData) {
+          socket.emit("game_player_data", { data: gamePlayerData });
+        }
 
         io.to(room.id).emit(PLAYER_RECONNECTED, {
           playerId: player.id,
           displayName: player.displayName,
         });
 
-        io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-          players: room.players.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            type: p.type,
-            isAdmin: p.isAdmin,
-            isConnected: p.isConnected,
-          })),
-        });
-
+        emitPlayerList(io, room);
         logInfo("Socket", `Player ${player.displayName} reconnected to room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to recover session";
         logError("Socket", `reconnect_session error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
+
+    // ── Admin Actions ──
 
     socket.on(TRANSFER_ADMIN, (payload: unknown) => {
       if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
@@ -246,7 +235,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to transfer admin";
         logError("Socket", `transfer_admin error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -273,29 +262,19 @@ export function registerSocketHandlers(io: Server): void {
         const kicked = kickPlayer(room, session.playerId, targetPlayerId);
 
         if (kicked.type === "ONLINE" && kicked.socketId) {
-          const kickedSocketId = kicked.socketId;
-          const kickedSocket = io.sockets.sockets.get(kickedSocketId);
+          const kickedSocket = io.sockets.sockets.get(kicked.socketId);
           if (kickedSocket) {
             kickedSocket.emit(ACTION_REJECTED, { code: "YOU_WERE_KICKED", message: "YOU_WERE_KICKED" });
             kickedSocket.leave(room.id);
           }
         }
 
-        io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-          players: room.players.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            type: p.type,
-            isAdmin: p.isAdmin,
-            isConnected: p.isConnected,
-          })),
-        });
-
+        emitPlayerList(io, room);
         logInfo("Socket", `Player ${kicked.displayName} kicked from room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to kick player";
         logError("Socket", `kick_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -321,21 +300,12 @@ export function registerSocketHandlers(io: Server): void {
         const { displayName } = payload as { displayName: string };
         const player = addOfflinePlayer(room, session.playerId, displayName);
 
-        io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-          players: room.players.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            type: p.type,
-            isAdmin: p.isAdmin,
-            isConnected: p.isConnected,
-          })),
-        });
-
+        emitPlayerList(io, room);
         logInfo("Socket", `Offline player ${player.displayName} added to room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to add offline player";
         logError("Socket", `add_offline_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -361,57 +331,18 @@ export function registerSocketHandlers(io: Server): void {
         const { targetPlayerId } = payload as { targetPlayerId: string };
         const removed = removeOfflinePlayer(room, session.playerId, targetPlayerId);
 
-        io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-          players: room.players.map((p) => ({
-            id: p.id,
-            displayName: p.displayName,
-            type: p.type,
-            isAdmin: p.isAdmin,
-            isConnected: p.isConnected,
-          })),
-        });
-
+        emitPlayerList(io, room);
         logInfo("Socket", `Offline player ${removed.displayName} removed from room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to remove offline player";
         logError("Socket", `remove_offline_player error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
-    socket.on(ADD_WORD, (payload: unknown) => {
-      if (!payload || typeof payload !== "object" || !("word" in payload)) {
-        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
-        return;
-      }
+    // ── Room Lifecycle ──
 
-      try {
-        const session = getSessionBySocket(socket.id);
-        if (!session) {
-          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
-          return;
-        }
-
-        const room = getRoom(session.roomId);
-        if (!room) {
-          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
-          return;
-        }
-
-        const { word } = payload as { word: string };
-        addWord(room, word);
-
-        io.to(room.id).emit(WORD_ADDED, { words: room.words });
-
-        logInfo("Socket", `Word added to room ${room.code}`);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to add word";
-        logError("Socket", `add_word error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
-      }
-    });
-
-    socket.on(START_GAME, () => {
+    socket.on(LOCK_ROOM, () => {
       try {
         const session = getSessionBySocket(socket.id);
         if (!session) {
@@ -430,19 +361,126 @@ export function registerSocketHandlers(io: Server): void {
           return;
         }
 
-        const round = startRound(room);
+        lockRoom(room);
+        io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
+        logInfo("Socket", `Room ${room.code} locked for game selection`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to lock room";
+        logError("Socket", `lock_room error: ${message}`);
+        socket.emit(ACTION_REJECTED, { code: message, message });
+      }
+    });
 
-        io.to(room.id).emit(GAME_STARTED, getRoomSnapshot(room));
-        io.to(room.id).emit(PHASE_CHANGED, { phase: round.phase });
+    socket.on(UNLOCK_ROOM, () => {
+      try {
+        const session = getSessionBySocket(socket.id);
+        if (!session) {
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
+          return;
+        }
 
-        // Send private role assignments to each online eligible participant
-        const eligible = getEligibleParticipants(room);
+        const room = getRoom(session.roomId);
+        if (!room) {
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
+          return;
+        }
+
+        if (room.adminPlayerId !== session.playerId) {
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
+          return;
+        }
+
+        unlockRoom(room);
+        io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
+        logInfo("Socket", `Room ${room.code} unlocked, back to waiting`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to unlock room";
+        logError("Socket", `unlock_room error: ${message}`);
+        socket.emit(ACTION_REJECTED, { code: message, message });
+      }
+    });
+
+    socket.on(SELECT_GAME, (payload: unknown) => {
+      if (!payload || typeof payload !== "object" || !("gameId" in payload)) {
+        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
+        return;
+      }
+
+      try {
+        const session = getSessionBySocket(socket.id);
+        if (!session) {
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
+          return;
+        }
+
+        const room = getRoom(session.roomId);
+        if (!room) {
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
+          return;
+        }
+
+        if (room.adminPlayerId !== session.playerId) {
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
+          return;
+        }
+
+        const { gameId } = payload as { gameId: string };
+        selectGame(room, gameId);
+
+        io.to(room.id).emit(GAME_SELECTED, { gameId });
+        io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
+        logInfo("Socket", `Game "${gameId}" selected in room ${room.code}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to select game";
+        logError("Socket", `select_game error: ${message}`);
+        socket.emit(ACTION_REJECTED, { code: message, message });
+      }
+    });
+
+    socket.on(START_GAME, (payload?: unknown) => {
+      try {
+        const session = getSessionBySocket(socket.id);
+        if (!session) {
+          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
+          return;
+        }
+
+        const room = getRoom(session.roomId);
+        if (!room) {
+          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
+          return;
+        }
+
+        if (room.adminPlayerId !== session.playerId) {
+          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
+          return;
+        }
+
+        if (!room.selectedGame || !room.gameState) {
+          socket.emit(ACTION_REJECTED, { code: "NO_GAME_SELECTED", message: "NO_GAME_SELECTED" });
+          return;
+        }
+
+        const game = getGame(room.selectedGame);
+        if (!game) {
+          socket.emit(ACTION_REJECTED, { code: "GAME_NOT_FOUND", message: "GAME_NOT_FOUND" });
+          return;
+        }
+
+        startGame(room);
+
+        io.to(room.id).emit(GAME_STARTED, {
+          roomStatus: room.status,
+          gameState: game.getPublicState(room.gameState),
+        });
+
+        // Send private game data to each eligible player
+        const eligible = game.getEligibleParticipants(room);
         for (const player of eligible) {
           if (player.type === "ONLINE" && player.socketId) {
-            if (player.id === round.impostorPlayerId) {
-              io.to(player.socketId).emit(ROLE_ASSIGNED, { role: "impostor" });
-            } else {
-              io.to(player.socketId).emit(ROLE_ASSIGNED, { role: "normal", word: round.word });
+            const privateData = game.getPlayerPrivateData(room.gameState, player.id);
+            if (privateData) {
+              io.to(player.socketId).emit("game_player_data", { data: privateData });
             }
           }
         }
@@ -451,7 +489,7 @@ export function registerSocketHandlers(io: Server): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to start game";
         logError("Socket", `start_game error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
@@ -475,103 +513,16 @@ export function registerSocketHandlers(io: Server): void {
         }
 
         stopGame(room);
-
         io.to(room.id).emit(GAME_STOPPED, getRoomSnapshot(room));
-
         logInfo("Socket", `Game stopped in room ${room.code}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to stop game";
         logError("Socket", `stop_game error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
+        socket.emit(ACTION_REJECTED, { code: message, message });
       }
     });
 
-    socket.on(ADVANCE_PHASE, () => {
-      try {
-        const session = getSessionBySocket(socket.id);
-        if (!session) {
-          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
-          return;
-        }
-
-        const room = getRoom(session.roomId);
-        if (!room) {
-          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
-          return;
-        }
-
-        if (room.adminPlayerId !== session.playerId) {
-          socket.emit(ACTION_REJECTED, { code: "UNAUTHORIZED", message: "UNAUTHORIZED" });
-          return;
-        }
-
-        const newPhase = advancePhase(room);
-
-        io.to(room.id).emit(PHASE_CHANGED, { phase: newPhase });
-
-        if (newPhase === "WAITING") {
-          io.to(room.id).emit(ROOM_STATE_UPDATED, getRoomSnapshot(room));
-        }
-
-        logInfo("Socket", `Phase advanced to ${newPhase} in room ${room.code}`);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to advance phase";
-        logError("Socket", `advance_phase error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
-      }
-    });
-
-    socket.on(SUBMIT_VOTE, (payload: unknown) => {
-      if (!payload || typeof payload !== "object" || !("targetPlayerId" in payload)) {
-        socket.emit(ACTION_REJECTED, { code: "INVALID_PAYLOAD", message: "INVALID_PAYLOAD" });
-        return;
-      }
-
-      try {
-        const session = getSessionBySocket(socket.id);
-        if (!session) {
-          socket.emit(ACTION_REJECTED, { code: "NO_SESSION", message: "NO_SESSION" });
-          return;
-        }
-
-        const room = getRoom(session.roomId);
-        if (!room) {
-          socket.emit(ACTION_REJECTED, { code: "ROOM_NOT_FOUND", message: "ROOM_NOT_FOUND" });
-          return;
-        }
-
-        const { targetPlayerId, offlinePlayerId } = payload as {
-          targetPlayerId: string;
-          offlinePlayerId?: string;
-        };
-
-        if (offlinePlayerId) {
-          submitOfflineVote(room, session.playerId, offlinePlayerId, targetPlayerId);
-        } else {
-          submitVote(room, session.playerId, targetPlayerId);
-        }
-
-        const eligible = getEligibleParticipants(room);
-        io.to(room.id).emit(VOTE_STATE_UPDATED, {
-          totalEligible: eligible.length,
-          votedCount: room.currentRound!.votes.length,
-        });
-
-        if (checkAllVoted(room)) {
-          advancePhase(room);
-          const result = calculateResult(room);
-
-          io.to(room.id).emit(ROUND_RESULT, result);
-          io.to(room.id).emit(PHASE_CHANGED, { phase: room.currentRound!.phase });
-        }
-
-        logInfo("Socket", `Vote submitted in room ${room.code}`);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to submit vote";
-        logError("Socket", `submit_vote error: ${message}`);
-        socket.emit(ACTION_REJECTED, { code: message, message: message });
-      }
-    });
+    // ── Disconnect ──
 
     socket.on("disconnect", () => {
       logInfo("Socket", `Client disconnected: ${socket.id}`);
@@ -583,9 +534,7 @@ export function registerSocketHandlers(io: Server): void {
 function handleDisconnect(io: Server, socket: Socket): void {
   try {
     const session = getSessionBySocket(socket.id);
-    if (!session) {
-      return;
-    }
+    if (!session) return;
 
     const room = getRoom(session.roomId);
     if (!room) {
@@ -599,10 +548,8 @@ function handleDisconnect(io: Server, socket: Socket): void {
       return;
     }
 
-    // Mark as disconnected but keep in room for potential reconnect
     markDisconnected(room, session.playerId);
     room.updatedAt = Date.now();
-
     deleteSession(socket.id);
 
     io.to(room.id).emit(PLAYER_DISCONNECTED, {
@@ -610,16 +557,7 @@ function handleDisconnect(io: Server, socket: Socket): void {
       displayName: player.displayName,
     });
 
-    io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-      players: room.players.map((p) => ({
-        id: p.id,
-        displayName: p.displayName,
-        type: p.type,
-        isAdmin: p.isAdmin,
-        isConnected: p.isConnected,
-      })),
-    });
-
+    emitPlayerList(io, room);
     logInfo("Socket", `Player ${player.displayName} disconnected from room ${room.code}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to handle disconnect";
@@ -630,24 +568,13 @@ function handleDisconnect(io: Server, socket: Socket): void {
 function handleExplicitLeave(io: Server, socket: Socket): void {
   try {
     const result = leaveRoom(socket.id);
-    if (!result) {
-      return;
-    }
+    if (!result) return;
 
     const { room, player, wasAdmin } = result;
 
     if (room) {
       socket.leave(room.id);
-
-      io.to(room.id).emit(PLAYER_LIST_UPDATED, {
-        players: room.players.map((p) => ({
-          id: p.id,
-          displayName: p.displayName,
-          type: p.type,
-          isAdmin: p.isAdmin,
-          isConnected: p.isConnected,
-        })),
-      });
+      emitPlayerList(io, room);
 
       if (wasAdmin) {
         io.to(room.id).emit(ADMIN_CHANGED, {

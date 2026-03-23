@@ -1,9 +1,7 @@
-import { AdminMode } from "../models/room.js";
 import { MAX_DISPLAY_NAME_LENGTH } from "../config/constants.js";
 
 export interface CreateRoomPayload {
   displayName: string;
-  adminMode: AdminMode;
 }
 
 export interface JoinRoomPayload {
@@ -30,15 +28,10 @@ export function validateCreateRoom(payload: unknown): ValidationResult<CreateRoo
     return { valid: false, error: "Display name is too long", code: "NAME_TOO_LONG" };
   }
 
-  if (p.adminMode !== "ADMIN_ONLY" && p.adminMode !== "ADMIN_PLAYER") {
-    return { valid: false, error: "Invalid admin mode", code: "INVALID_ADMIN_MODE" };
-  }
-
   return {
     valid: true,
     data: {
       displayName: p.displayName.trim(),
-      adminMode: p.adminMode,
     },
   };
 }

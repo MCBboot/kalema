@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Background gradient -->
+    <radialGradient id="bg" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#1c1c26"/>
+      <stop offset="100%" stop-color="#0a0a0e"/>
+    </radialGradient>
+
+    <!-- Gold gradient for main elements -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0cc6e"/>
+      <stop offset="40%" stop-color="#d4a54a"/>
+      <stop offset="100%" stop-color="#a07520"/>
+    </linearGradient>
+
+    <!-- Lighter gold for highlights -->
+    <linearGradient id="goldLight" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f0cc6e"/>
+      <stop offset="100%" stop-color="#d4a54a"/>
+    </linearGradient>
+
+    <!-- Warm glow behind mask -->
+    <radialGradient id="glow" cx="50%" cy="42%" r="35%">
+      <stop offset="0%" stop-color="#d4a54a" stop-opacity="0.20"/>
+      <stop offset="70%" stop-color="#d4a54a" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#d4a54a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Eye cutout glow -->
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d4a54a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#d4a54a" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Mask shape clip -->
+    <clipPath id="maskClip">
+      <path d="M256 120 C160 120 90 190 90 260 C90 330 140 390 200 410 L230 430 Q256 445 282 430 L312 410 C372 390 422 330 422 260 C422 190 352 120 256 120Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+
+  <!-- Outer decorative octagon -->
+  <polygon
+    points="256,52 370,98 414,212 414,300 370,414 256,460 142,414 98,300 98,212 142,98"
+    fill="none" stroke="#d4a54a" stroke-opacity="0.07" stroke-width="1"/>
+
+  <!-- Inner decorative octagon -->
+  <polygon
+    points="256,82 348,118 386,220 386,292 348,394 256,430 164,394 126,292 126,220 164,118"
+    fill="none" stroke="#d4a54a" stroke-opacity="0.05" stroke-width="0.8"/>
+
+  <!-- Ambient glow -->
+  <circle cx="256" cy="240" r="180" fill="url(#glow)"/>
+
+  <!-- === MASK SHAPE === -->
+  <!-- Main mask body — elegant pointed Arabic-style mask -->
+  <path
+    d="M256 130
+       C180 130 108 185 108 258
+       C108 310 135 358 180 390
+       L220 418
+       Q256 440 292 418
+       L332 390
+       C377 358 404 310 404 258
+       C404 185 332 130 256 130Z"
+    fill="none" stroke="url(#gold)" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- Mask forehead arch detail -->
+  <path
+    d="M180 190 Q218 155 256 152 Q294 155 332 190"
+    fill="none" stroke="url(#goldLight)" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Nose bridge -->
+  <path
+    d="M256 215 L256 310 L244 330"
+    fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+
+  <!-- === LEFT EYE === -->
+  <ellipse cx="196" cy="248" rx="48" ry="32" fill="#0a0a0e"/>
+  <ellipse cx="196" cy="248" rx="48" ry="32" fill="url(#eyeGlow)"/>
+  <ellipse cx="196" cy="248" rx="48" ry="32" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <!-- Left eye almond points -->
+  <path d="M148 248 Q172 228 196 225 Q220 228 244 248" fill="none" stroke="url(#goldLight)" stroke-width="1.5" opacity="0.4"/>
+  <path d="M148 248 Q172 268 196 271 Q220 268 244 248" fill="none" stroke="url(#goldLight)" stroke-width="1.5" opacity="0.4"/>
+  <!-- Left eye gleam -->
+  <circle cx="206" cy="241" r="5" fill="#d4a54a" opacity="0.7"/>
+  <circle cx="212" cy="237" r="2" fill="#f0cc6e" opacity="0.9"/>
+
+  <!-- === RIGHT EYE === -->
+  <ellipse cx="316" cy="248" rx="48" ry="32" fill="#0a0a0e"/>
+  <ellipse cx="316" cy="248" rx="48" ry="32" fill="url(#eyeGlow)"/>
+  <ellipse cx="316" cy="248" rx="48" ry="32" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <!-- Right eye almond points -->
+  <path d="M268 248 Q292 228 316 225 Q340 228 364 248" fill="none" stroke="url(#goldLight)" stroke-width="1.5" opacity="0.4"/>
+  <path d="M268 248 Q292 268 316 271 Q340 268 364 248" fill="none" stroke="url(#goldLight)" stroke-width="1.5" opacity="0.4"/>
+  <!-- Right eye gleam -->
+  <circle cx="326" cy="241" r="5" fill="#d4a54a" opacity="0.7"/>
+  <circle cx="332" cy="237" r="2" fill="#f0cc6e" opacity="0.9"/>
+
+  <!-- === DECORATIVE DETAILS === -->
+  <!-- Cheek ornaments — small geometric diamonds -->
+  <g opacity="0.3" fill="url(#gold)">
+    <!-- Left cheek -->
+    <polygon points="155,310 162,303 169,310 162,317"/>
+    <polygon points="140,330 145,325 150,330 145,335"/>
+    <!-- Right cheek -->
+    <polygon points="343,310 350,303 357,310 350,317"/>
+    <polygon points="362,330 367,325 372,330 367,335"/>
+  </g>
+
+  <!-- Forehead jewel — eight-pointed star (Islamic geometric motif) -->
+  <g transform="translate(256,168)" fill="url(#gold)" opacity="0.8">
+    <!-- Diamond 1 (vertical) -->
+    <polygon points="0,-16 7,0 0,16 -7,0"/>
+    <!-- Diamond 2 (horizontal) -->
+    <polygon points="-16,0 0,-7 16,0 0,7"/>
+  </g>
+  <!-- Jewel inner dot -->
+  <circle cx="256" cy="168" r="3.5" fill="#f0cc6e"/>
+
+  <!-- Small dots flanking the forehead jewel -->
+  <circle cx="228" cy="172" r="2" fill="#d4a54a" opacity="0.4"/>
+  <circle cx="284" cy="172" r="2" fill="#d4a54a" opacity="0.4"/>
+
+  <!-- Brow lines above eyes -->
+  <path d="M152 212 Q174 195 220 200" fill="none" stroke="url(#gold)" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+  <path d="M360 212 Q338 195 292 200" fill="none" stroke="url(#gold)" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Bottom chin ornament line -->
+  <line x1="232" y1="425" x2="280" y2="425" stroke="url(#gold)" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+
+  <!-- Corner ornaments (arabesque dots) -->
+  <g fill="#d4a54a" opacity="0.12">
+    <circle cx="76" cy="76" r="4"/>
+    <circle cx="436" cy="76" r="4"/>
+    <circle cx="76" cy="436" r="4"/>
+    <circle cx="436" cy="436" r="4"/>
+  </g>
+</svg>

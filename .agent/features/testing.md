@@ -336,7 +336,7 @@ Full lifecycle tests using programmatic Socket.IO clients.
 | # | Component | Test Case | Expected |
 |---|-----------|-----------|----------|
 | FC21 | RoleReveal | Normal player sees word | Word displayed in Arabic |
-| FC22 | RoleReveal | Impostor sees impostor message | "!انت المحتال" displayed |
+| FC22 | RoleReveal | Impostor sees impostor message | "!انت المتخفي" displayed |
 | FC23 | VotingScreen | Renders vote targets (excludes self) | Self not in target list |
 | FC24 | VotingScreen | Submitting vote emits event | Socket emit called |
 | FC25 | VotingScreen | After voting, shows waiting state | "waiting for others" shown |

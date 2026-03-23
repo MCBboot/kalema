@@ -1,6 +1,6 @@
 "use client";
 
-const ERROR_MESSAGES: Record<string, string> = {
+export const ERROR_MESSAGES: Record<string, string> = {
   ROOM_NOT_FOUND: "الغرفة غير موجودة",
   DUPLICATE_NAME: "اسم مستخدم مكرر",
   UNAUTHORIZED: "غير مسموح",
@@ -21,6 +21,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   CANNOT_VOTE_SELF: "لا يمكنك التصويت لنفسك",
   NOT_ELIGIBLE: "غير مؤهل للتصويت",
   PLAYER_NOT_OFFLINE: "اللاعب ليس غير متصل",
+  ROOM_LOCKED: "الغرفة مقفلة، لا يمكن الانضمام الآن",
   INVALID_PHASE_TRANSITION: "انتقال مرحلة غير صالح",
   INVALID_VALUE: "قيمة غير صالحة",
   MISSING_FIELD: "حقل مطلوب مفقود",
@@ -34,8 +35,9 @@ export default function ErrorMessage({ code }: ErrorMessageProps) {
   const message = ERROR_MESSAGES[code] || "حدث خطأ غير متوقع";
 
   return (
-    <div className="w-full rounded-2xl bg-danger-surface border border-danger/20 px-4 py-3 text-danger text-sm">
-      {message}
+    <div className="w-full rounded-2xl bg-danger-surface border border-danger/20 px-5 py-4 text-danger text-sm font-semibold flex items-center gap-2 animate-shake">
+      <span className="text-base flex-shrink-0">{"\u26A0"}</span>
+      <span>{message}</span>
     </div>
   );
 }

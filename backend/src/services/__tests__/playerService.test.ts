@@ -12,7 +12,7 @@ import {
 } from "../playerService.js";
 
 function makeRoom(): Room {
-  return createRoomModel("room-1", "ABCDE", "admin-1", "ADMIN_PLAYER", ["word1", "word2"]);
+  return createRoomModel("room-1", "ABCDE", "admin-1");
 }
 
 describe("playerService", () => {

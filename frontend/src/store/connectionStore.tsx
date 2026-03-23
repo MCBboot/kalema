@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { connectSocket, disconnectSocket, getSocket } from "@/lib/socket";
+import { useToast } from "@/components/shared/Toast";
 
 interface ConnectionState {
   isConnected: boolean;
@@ -21,6 +22,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [reconnectToken, setReconnectToken] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [lastDisconnectTime, setLastDisconnectTime] = useState<number | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const socket = getSocket();
@@ -38,26 +40,33 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       setLastDisconnectTime(Date.now());
     }
 
+    function onConnectError() {
+      showToast("تعذر الاتصال بالخادم", "error");
+    }
+
     function onReconnectAttempt() {
       setIsReconnecting(true);
     }
 
     function onReconnectFailed() {
       setIsReconnecting(false);
+      showToast("فشل إعادة الاتصال بالخادم", "error");
     }
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
     socket.io.on("reconnect_attempt", onReconnectAttempt);
     socket.io.on("reconnect_failed", onReconnectFailed);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
       socket.io.off("reconnect_attempt", onReconnectAttempt);
       socket.io.off("reconnect_failed", onReconnectFailed);
     };
-  }, []);
+  }, [showToast]);
 
   const connect = useCallback(() => {
     connectSocket();

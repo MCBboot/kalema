@@ -1,47 +1,44 @@
----
-name: Room Creation & Joining
-status: planned
-priority: high
-created: 2026-03-21
-updated: 2026-03-21
-owner: unassigned
-depends_on: [realtime]
----
+# Feature: Room Creation & Joining
 
-## Description
+> **Status:** implemented | **Priority:** high | **Updated:** 2026-03-23
 
-Users can create or join rooms. Each room has a unique code, an admin, a player list, and a word list. Room is the core container for all game state.
+## Overview
 
-## Requirements
+Players create or join rooms using unique codes. Rooms are **game-agnostic** — they hold players and delegate game logic to plugins.
 
-### Room Creation
-- User enters display name, creates room
-- System generates unique room code
-- Creator becomes initial admin
-- Creator selects admin mode (ADMIN_ONLY or ADMIN_PLAYER)
-- Room receives a copy of default words
+## Room Status
 
-### Room Joining
-- User enters display name + room code
-- System validates: room exists, name not duplicate, payload valid
-- On success: send full room state to joining player
-- On failure: return structured error
+```
+WAITING → LOCKED → PLAYING
+   ↑         ↓
+   └─────────┘  (unlock)
+```
 
-### Room Data Model
-- Room ID, code, created/updated timestamps
-- Status: WAITING | ROLE_REVEAL | DISCUSSION | VOTING | RESULT | STOPPED
-- Admin player ID, admin mode
-- Players array, words array, current round
+- **WAITING**: Players can join, admin manages players
+- **LOCKED**: No new joins, admin selects game and configures it
+- **PLAYING**: Game plugin is active
 
-## Related Files
+## Room Model
+
+```ts
+interface Room {
+  id: string;
+  code: string;
+  status: "WAITING" | "LOCKED" | "PLAYING";
+  adminPlayerId: string;
+  adminMode: "ADMIN_ONLY" | "ADMIN_PLAYER";
+  players: Player[];
+  selectedGame: string | null;
+  gameState: GameState | null;
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+## Files
 
 - `backend/src/models/room.ts`
 - `backend/src/services/roomService.ts`
-- `backend/src/validators/roomValidators.ts`
-- `backend/src/store/memoryStore.ts`
-- `frontend/src/app/` (create/join pages)
-
-## Notes
-
-- Room code must be short and easy to share verbally (Arabic context)
-- Room cleanup handled separately (see cleanup.md)
+- `backend/src/socket/registerSocketHandlers.ts`
+- `frontend/src/app/room/[code]/page.tsx`
+- `frontend/src/store/roomStore.tsx`

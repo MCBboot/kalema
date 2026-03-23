@@ -9,7 +9,7 @@ import {
 } from "../adminService.js";
 
 function makeRoom(): Room {
-  const room = createRoomModel("room-1", "ABCDE", "admin-1", "ADMIN_PLAYER", ["word1", "word2"]);
+  const room = createRoomModel("room-1", "ABCDE", "admin-1");
   const admin = createOnlinePlayer("admin-1", "Alice", "socket-1");
   admin.isAdmin = true;
   room.players.push(admin);

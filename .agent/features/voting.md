@@ -1,50 +1,18 @@
----
-name: Voting System
-status: planned
-priority: high
-created: 2026-03-21
-updated: 2026-03-21
-owner: unassigned
-depends_on: [game-engine, players]
----
+# Feature: Voting System
 
-## Description
+> **Status:** implemented | **Priority:** high | **Updated:** 2026-03-23
 
-Players vote to identify the impostor during the VOTING phase. Offline player votes are submitted through admin UI.
+## Overview
 
-## Requirements
+Voting is now part of the **Impostor game plugin** (`backend/src/games/impostor/vote.ts`).
 
-### Vote Rules
-- One vote per active participant
-- No duplicate vote (unless replacement explicitly allowed)
-- Votes only accepted during VOTING phase
-- Invalid targets rejected
-- Offline player votes submitted through admin
+See `features/impostor-game.md` for full details.
 
-### Vote End Conditions
-- All active participants voted, OR
-- Voting timer expires (if timer implemented)
+## Key Rules
 
-### Result Calculation
-- Count valid votes per target
-- Tie handling: no successful identification (V1 default)
-- Reveal: impostor identity, secret word, outcome
-
-### Vote Data Model
-```ts
-interface Vote {
-  voterPlayerId: string;
-  targetPlayerId: string;
-  submittedAt: number;
-}
-```
-
-## Related Files
-
-- `backend/src/models/vote.ts`
-- `backend/src/services/voteService.ts`
-- `frontend/src/components/game/` (voting screen)
-
-## Notes
-
-- Vote progress broadcasts should not reveal who voted for whom until result phase
+- One vote per eligible participant
+- No self-voting
+- Vote during VOTING phase only
+- All votes in → auto-advance to RESULT
+- Tie → impostor escapes
+- Admin can submit votes for offline players

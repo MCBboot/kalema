@@ -2,16 +2,19 @@ import "dotenv/config";
 import { httpServer, io } from "./server.js";
 import { PORT } from "./config/env.js";
 import { logInfo, logError } from "./utils/logger.js";
-import { loadDefaultWords } from "./services/wordService.js";
+import { registerGame } from "./games/registry.js";
+import { impostorGame, initImpostorGame } from "./games/impostor/index.js";
 import { registerSocketHandlers } from "./socket/registerSocketHandlers.js";
 import { startCleanupJob } from "./jobs/cleanupJob.js";
 
+// Register games
 try {
-  loadDefaultWords();
-  logInfo("Startup", "Default words loaded successfully");
+  initImpostorGame();
+  registerGame(impostorGame);
+  logInfo("Startup", "Impostor game registered successfully");
 } catch (err) {
   const message = err instanceof Error ? err.message : "Unknown error";
-  logError("Startup", `Failed to load default words: ${message}`);
+  logError("Startup", `Failed to register impostor game: ${message}`);
   process.exit(1);
 }
 

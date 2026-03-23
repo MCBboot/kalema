@@ -59,7 +59,7 @@ describe("cleanupJob", () => {
   it("CL2: cleanup removes inactive empty rooms (no connected players + timeout exceeded)", () => {
     const oldTime = Date.now() - ROOM_INACTIVITY_TIMEOUT_MS - 1;
 
-    const room = createRoomModel("room-1", "ABCDE", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-1", "ABCDE", "player-1");
     room.updatedAt = oldTime;
     // Add a disconnected player (no connected online players)
     const player = createOnlinePlayer("player-1", "Alice", "socket-1");
@@ -80,7 +80,7 @@ describe("cleanupJob", () => {
   it("CL3: cleanup keeps active rooms (has connected players)", () => {
     const oldTime = Date.now() - ROOM_INACTIVITY_TIMEOUT_MS - 1;
 
-    const room = createRoomModel("room-2", "BCDEG", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-2", "BCDEG", "player-1");
     room.updatedAt = oldTime;
     // Add a connected player
     const player = createOnlinePlayer("player-1", "Alice", "socket-1");
@@ -98,7 +98,7 @@ describe("cleanupJob", () => {
   });
 
   it("CL4: cleanup keeps recently active empty rooms (within timeout window)", () => {
-    const room = createRoomModel("room-3", "CDEFG", "player-1", "ADMIN_PLAYER", ["word1"]);
+    const room = createRoomModel("room-3", "CDEFG", "player-1");
     room.updatedAt = Date.now(); // recently updated
     // No connected players
     const player = createOnlinePlayer("player-1", "Alice", "socket-1");

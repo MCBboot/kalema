@@ -1,9 +1,12 @@
 import { io, Socket } from "socket.io-client";
 
 function getSocketUrl(): string {
+  // Explicit backend URL (for Docker or custom setups)
   if (process.env.NEXT_PUBLIC_BACKEND_URL) return process.env.NEXT_PUBLIC_BACKEND_URL;
+
   if (typeof window !== "undefined") {
-    return `http://${window.location.hostname}:26033`;
+    // Connect to same origin — reverse proxy routes /socket.io to backend
+    return window.location.origin;
   }
   return "http://localhost:26033";
 }
@@ -13,11 +16,11 @@ let socket: Socket | null = null;
 export function getSocket(): Socket {
   if (!socket) {
     socket = io(getSocketUrl(), {
-      path: "/api/socket.io",
       autoConnect: false,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      transports: ["websocket", "polling"],
     });
   }
   return socket;

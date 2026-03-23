@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { getSocket } from "@/lib/socket";
 import { ClientEvents, ServerEvents } from "@/lib/api-types";
-import type { Room, Player, RoleAssignedPayload, ActionRejectedPayload } from "@/lib/api-types";
+import type { Room, ActionRejectedPayload } from "@/lib/api-types";
 
 // localStorage helpers
 export function getStoredReconnectToken(code: string): string | null {
@@ -35,7 +35,7 @@ interface SessionRecoveredPayload {
   playerId: string;
   displayName: string;
   reconnectToken: string;
-  role?: RoleAssignedPayload;
+  gamePlayerData?: unknown;
 }
 
 interface UseReconnectCallbacks {
@@ -48,14 +48,13 @@ export function useReconnect(callbacks: UseReconnectCallbacks) {
     (code: string) => {
       const token = getStoredReconnectToken(code);
       if (!token) {
-        callbacks.onReconnectFailed("لا يوجد رمز إعادة اتصال");
+        callbacks.onReconnectFailed("No reconnect token");
         return;
       }
 
       const socket = getSocket();
 
       const onRecovered = (data: SessionRecoveredPayload) => {
-        // Store new token
         storeReconnectData(code, data.reconnectToken);
         callbacks.onSessionRecovered(data);
         cleanup();
@@ -63,7 +62,7 @@ export function useReconnect(callbacks: UseReconnectCallbacks) {
 
       const onRejected = (data: ActionRejectedPayload) => {
         clearReconnectData(code);
-        callbacks.onReconnectFailed(data.message || "انتهت صلاحية الجلسة");
+        callbacks.onReconnectFailed(data.message || "Session expired");
         cleanup();
       };
 

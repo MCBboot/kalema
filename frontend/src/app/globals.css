@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="dark"] {
   /* Arabian Noir palette */
   --background: #0c0c0f;
   --surface: #141419;
@@ -27,6 +28,34 @@
   --border: #ffffff0a;
   --border-visible: #ffffff14;
   --border-accent: #d4a54a30;
+}
+
+[data-theme="light"] {
+  --background: #f5f3ef;
+  --surface: #ffffff;
+  --surface-raised: #faf9f7;
+  --surface-overlay: #f0eeea;
+
+  --foreground: #1a1817;
+  --foreground-muted: #6b6660;
+  --foreground-dim: #a8a29e;
+
+  --accent: #b8892e;
+  --accent-hover: #a07520;
+  --accent-dim: #b8892e25;
+  --accent-glow: #b8892e12;
+
+  --danger: #b83a3a;
+  --danger-dim: #b83a3a18;
+  --danger-surface: #b83a3a0a;
+
+  --success: #2e8c58;
+  --success-dim: #2e8c5818;
+  --success-surface: #2e8c580a;
+
+  --border: #0000000a;
+  --border-visible: #00000012;
+  --border-accent: #b8892e25;
 }
 
 @theme inline {
@@ -69,7 +98,7 @@ body::before {
   opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   pointer-events: none;
-  z-index: 9999;
+  z-index: -1;
 }
 
 /* Card surfaces */
@@ -137,3 +166,36 @@ body::before {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--foreground-dim); border-radius: 2px; }
+
+[data-theme="light"] .shadow-xl { --tw-shadow-color: rgba(0,0,0,0.08); }
+
+/* Toast slide-in animation */
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-down {
+  animation: slide-in-down 0.3s ease-out both;
+}
+
+/* Error shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  90% { transform: translateX(2px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}

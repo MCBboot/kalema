@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#1c1c26"/>
+      <stop offset="100%" stop-color="#0a0a0e"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0cc6e"/>
+      <stop offset="40%" stop-color="#d4a54a"/>
+      <stop offset="100%" stop-color="#a07520"/>
+    </linearGradient>
+    <linearGradient id="goldLight" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f0cc6e"/>
+      <stop offset="100%" stop-color="#d4a54a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="35%">
+      <stop offset="0%" stop-color="#d4a54a" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#d4a54a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d4a54a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#d4a54a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="180" height="180" fill="url(#bg)"/>
+  <circle cx="90" cy="82" r="62" fill="url(#glow)"/>
+
+  <!-- Mask body -->
+  <path
+    d="M90 42
+       C63 42 38 62 38 91
+       C38 109 47 126 63 139
+       L78 150
+       Q90 158 102 150
+       L117 139
+       C133 126 142 109 142 91
+       C142 62 117 42 90 42Z"
+    fill="none" stroke="url(#gold)" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- Forehead arch -->
+  <path d="M63 66 Q77 53 90 52 Q103 53 117 66"
+    fill="none" stroke="url(#goldLight)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Nose bridge -->
+  <path d="M90 76 L90 110 L86 117" fill="none" stroke="url(#gold)" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Left eye -->
+  <ellipse cx="70" cy="88" rx="17" ry="11" fill="#0a0a0e"/>
+  <ellipse cx="70" cy="88" rx="17" ry="11" fill="url(#eyeGlow)"/>
+  <ellipse cx="70" cy="88" rx="17" ry="11" fill="none" stroke="url(#gold)" stroke-width="1.2"/>
+  <circle cx="73.5" cy="86" r="2" fill="#d4a54a" opacity="0.7"/>
+  <circle cx="75.5" cy="85" r="0.8" fill="#f0cc6e" opacity="0.9"/>
+
+  <!-- Right eye -->
+  <ellipse cx="110" cy="88" rx="17" ry="11" fill="#0a0a0e"/>
+  <ellipse cx="110" cy="88" rx="17" ry="11" fill="url(#eyeGlow)"/>
+  <ellipse cx="110" cy="88" rx="17" ry="11" fill="none" stroke="url(#gold)" stroke-width="1.2"/>
+  <circle cx="113.5" cy="86" r="2" fill="#d4a54a" opacity="0.7"/>
+  <circle cx="115.5" cy="85" r="0.8" fill="#f0cc6e" opacity="0.9"/>
+
+  <!-- Forehead jewel (8-pointed star) -->
+  <g transform="translate(90,57)" fill="url(#gold)" opacity="0.8">
+    <polygon points="0,-5.5 2.5,0 0,5.5 -2.5,0"/>
+    <polygon points="-5.5,0 0,-2.5 5.5,0 0,2.5"/>
+  </g>
+  <circle cx="90" cy="57" r="1.3" fill="#f0cc6e"/>
+
+  <!-- Brow lines -->
+  <path d="M54 76 Q62 70 78 71" fill="none" stroke="url(#gold)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <path d="M126 76 Q118 70 102 71" fill="none" stroke="url(#gold)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- Cheek diamonds -->
+  <g opacity="0.25" fill="url(#gold)">
+    <polygon points="52,110 55,107 58,110 55,113"/>
+    <polygon points="122,110 125,107 128,110 125,113"/>
+  </g>
+</svg>
