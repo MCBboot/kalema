@@ -55,10 +55,10 @@ Room statuses: `WAITING` → `LOCKED` → `PLAYING`
 Browser ──► Backend (public port 26032)
                 ├── /socket.io/*  → handled by Backend
                 ├── /health       → handled by Backend
-                └── /*            → proxied to Frontend (internal Docker network)
+                └── /*            → proxied to Frontend (same container, port 26031)
 ```
 
-Only one public port is exposed. Users connect to a single URL, while Docker still runs backend and frontend as separate services internally.
+Only one public port is exposed. In production Docker, both backend and frontend run inside a single container.
 
 ### Socket Event Namespacing
 
@@ -116,13 +116,27 @@ NODE_ENV=production npm start
 
 ### Run with Docker
 
+Build one image from the repo root:
+
+```bash
+docker build -t kalema .
+```
+
+Run one container:
+
+```bash
+docker run --name kalema-app -p 26032:26032 kalema
+```
+
+Or with Compose:
+
 ```bash
 docker compose up --build
 ```
 
 Open `http://localhost:26032`.
 
-In Docker, only the backend port is published publicly. The backend handles Socket.IO and proxies normal page requests to the frontend container, so the app uses a single URL.
+In Docker, only port `26032` is published. The backend handles Socket.IO and proxies normal page requests to the frontend process on `127.0.0.1:26031` inside the same container.
 
 ### Production Domain Setup
 
@@ -137,13 +151,13 @@ https://kalema.example.com
 Public server port 26032
         │
         ▼
-Backend container
+Kalema container
   - handles /socket.io/*
   - handles /health
-  - proxies all page requests to frontend container
+  - proxies all page requests to frontend process on 127.0.0.1:26031
 ```
 
-If you place Nginx or Cloudflare in front, they should forward traffic to the backend container's public port, not directly to the frontend container.
+If you place Nginx or Cloudflare in front, they should forward traffic only to port `26032` on this container or host.
 
 ### Run Tests
 
@@ -206,7 +220,10 @@ kalema/
 │       ├── lib/                    # Socket client, API types
 │       └── utils/                  # RTL helpers, formatters
 │
-├── docker-compose.yml
+├── Dockerfile                      # Single production image for backend + frontend
+├── docker-compose.yml              # Single-service compose wrapper for the same image
+├── scripts/
+│   └── start-container.sh          # Starts frontend and backend inside one container
 └── .agent/                         # AI agent collaboration files
     ├── SPEC.md                     # Full project specification
     ├── CHANGELOG.md                # Version history
@@ -259,7 +276,7 @@ kalema/
 ```env
 PORT=26032
 CORS_ORIGIN=*
-FRONTEND_URL=http://localhost:26032
+FRONTEND_URL=http://127.0.0.1:26031
 ```
 
 **Frontend** — `frontend/.env.local`:
@@ -267,6 +284,13 @@ FRONTEND_URL=http://localhost:26032
 NEXT_PUBLIC_BACKEND_URL=           # Leave empty to auto-detect
 PORT=26032
 HOSTNAME=0.0.0.0
+```
+
+**Container runtime**:
+```env
+PORT=26032
+FRONTEND_PORT=26031
+FRONTEND_URL=http://127.0.0.1:26031
 ```
 
 ### Game Constants

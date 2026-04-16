@@ -1,0 +1,14 @@
+.git
+.gitignore
+.codex
+node_modules
+backend/node_modules
+frontend/node_modules
+backend/dist
+frontend/.next
+frontend/server.js
+ERROR
+[frontend
+frontend@0.1.0
+next
+npm-debug.log*

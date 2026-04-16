@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { ConnectionProvider } from "@/store/connectionStore";
 import { RoomProvider } from "@/store/roomStore";
@@ -9,12 +8,6 @@ import { ThemeProvider } from "@/store/themeStore";
 import { I18nProvider } from "@/i18n/context";
 import Menu from "@/components/shared/Menu";
 import { GameInit } from "./game-init";
-
-const notoSansArabic = Noto_Sans_Arabic({
-  variable: "--font-noto-arabic",
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "كلمة — Kalema",
@@ -31,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${notoSansArabic.variable} h-full antialiased`}>
+    <html lang="ar" dir="rtl" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <I18nProvider>

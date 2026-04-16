@@ -6,7 +6,7 @@ This frontend is a Next.js application for the Kalema party game platform.
 
 The frontend renders the game UI and connects to Socket.IO from the browser.
 
-In Docker production, it is not exposed directly to the public internet. The backend is the single public entrypoint and proxies page requests to this frontend service.
+In production Docker, it is not exposed directly to the public internet. The backend is the single public entrypoint and proxies page requests to this frontend process inside the same container.
 
 Request flow:
 
@@ -26,6 +26,18 @@ npm run dev:frontend
 ```
 
 Open `http://localhost:26032`.
+
+## Production Container
+
+In the production image, the frontend runs on an internal port only:
+
+```text
+Frontend process: 127.0.0.1:26031
+Backend process:  0.0.0.0:26032
+Public access:    port 26032 only
+```
+
+The backend proxies normal page requests to the frontend process.
 
 ## Environment
 

@@ -14,7 +14,8 @@
     "build:frontend": "npm run build --workspace=frontend",
     "test": "npm run test --workspaces",
     "test:backend": "npm run test --workspace=backend",
-    "start": "concurrently -n backend,frontend -c blue,green \"npm run start --workspace=backend\" \"npm run start --workspace=frontend\""
+    "start": "concurrently -n backend,frontend -c blue,green \"npm run start --workspace=backend\" \"npm run start --workspace=frontend\"",
+    "start:container": "sh scripts/start-container.sh"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

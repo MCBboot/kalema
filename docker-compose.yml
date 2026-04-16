@@ -1,24 +1,12 @@
 services:
-  backend:
-    build: ./backend
+  app:
+    build:
+      context: .
     ports:
       - "26032:26032"
     environment:
       - PORT=26032
       - NODE_ENV=production
-      - FRONTEND_URL=http://frontend:26032
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-}
-    expose:
-      - "26032"
-    environment:
-      - PORT=26032
-      - HOSTNAME=0.0.0.0
-    depends_on:
-      - backend
+      - FRONTEND_PORT=26031
+      - FRONTEND_URL=http://127.0.0.1:26031
     restart: unless-stopped

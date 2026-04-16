@@ -79,13 +79,13 @@
   --color-border: var(--border);
   --color-border-visible: var(--border-visible);
   --color-border-accent: var(--border-accent);
-  --font-sans: var(--font-noto-arabic);
+  --font-sans: "Noto Sans Arabic", "Tahoma", "Arial", sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-arabic), "Noto Sans Arabic", sans-serif;
+  font-family: "Noto Sans Arabic", "Tahoma", "Arial", sans-serif;
   direction: rtl;
   text-align: right;
 }
