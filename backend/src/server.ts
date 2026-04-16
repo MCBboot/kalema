@@ -1,6 +1,8 @@
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import { Server } from "socket.io";
-import { CORS_ORIGIN } from "./config/env.js";
+import { FRONTEND_URL } from "./config/env.js";
+
+const frontendTarget = new URL(FRONTEND_URL);
 
 export const httpServer = createServer((req, res) => {
   if (req.method === "GET" && req.url === "/health") {
@@ -8,6 +10,34 @@ export const httpServer = createServer((req, res) => {
     res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }));
     return;
   }
+
+  const proxyReq = httpRequest(
+    {
+      protocol: frontendTarget.protocol,
+      hostname: frontendTarget.hostname,
+      port: frontendTarget.port,
+      method: req.method,
+      path: req.url,
+      headers: {
+        ...req.headers,
+        host: frontendTarget.host,
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+      proxyRes.pipe(res);
+    },
+  );
+
+  proxyReq.on("error", (err) => {
+    console.error("[Frontend Proxy] Error:", err.message);
+    if (!res.headersSent) {
+      res.writeHead(502, { "Content-Type": "text/plain" });
+    }
+    res.end("Frontend unavailable");
+  });
+
+  req.pipe(proxyReq);
 });
 
 export const io = new Server(httpServer, {

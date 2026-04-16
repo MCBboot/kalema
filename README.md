@@ -21,7 +21,7 @@ A real-time multiplayer web game platform with Arabic + English support. Players
 | State | In-memory (no database) |
 | Styling | Tailwind CSS 4 |
 | i18n | Arabic (ar) + English (en) |
-| Proxy | Custom Next.js server (proxies WebSocket to backend) |
+| Proxy | Backend reverse-proxies page requests to the frontend |
 
 ## Architecture
 
@@ -52,13 +52,13 @@ Room statuses: `WAITING` → `LOCKED` → `PLAYING`
 ### Network Architecture
 
 ```
-Browser ──► Frontend (Next.js custom server, port 26032)
-                ├── /socket.io/*  → proxied to Backend (port 26033)
-                ├── /health       → proxied to Backend
-                └── /*            → Next.js pages
+Browser ──► Backend (public port 26032)
+                ├── /socket.io/*  → handled by Backend
+                ├── /health       → handled by Backend
+                └── /*            → proxied to Frontend (internal Docker network)
 ```
 
-Only **port 26032** is exposed. The frontend proxies all Socket.IO traffic to the backend.
+Only one public port is exposed. Users connect to a single URL, while Docker still runs backend and frontend as separate services internally.
 
 ### Socket Event Namespacing
 
@@ -89,12 +89,14 @@ npm install
 cd backend
 npm run dev
 
-# Terminal 2: Start frontend (includes WebSocket proxy)
+# Terminal 2: Start frontend
 cd frontend
 npm run dev
 ```
 
 Open `http://localhost:26032` in your browser.
+
+In local development, the frontend and backend still run as separate processes. The browser connects to the frontend URL, and the frontend code uses the same origin for Socket.IO unless you override it.
 
 ### Run (Production)
 
@@ -118,6 +120,31 @@ NODE_ENV=production npm start
 docker compose up --build
 ```
 
+Open `http://localhost:26032`.
+
+In Docker, only the backend port is published publicly. The backend handles Socket.IO and proxies normal page requests to the frontend container, so the app uses a single URL.
+
+### Production Domain Setup
+
+Point your domain to the machine running Docker and expose only the backend port publicly.
+
+Example:
+
+```text
+https://kalema.example.com
+        │
+        ▼
+Public server port 26032
+        │
+        ▼
+Backend container
+  - handles /socket.io/*
+  - handles /health
+  - proxies all page requests to frontend container
+```
+
+If you place Nginx or Cloudflare in front, they should forward traffic to the backend container's public port, not directly to the frontend container.
+
 ### Run Tests
 
 ```bash
@@ -132,7 +159,7 @@ kalema/
 ├── backend/                        # Node.js + Socket.IO server
 │   └── src/
 │       ├── index.ts                # Entry: registers games, starts server
-│       ├── server.ts               # HTTP + Socket.IO setup
+│       ├── server.ts               # HTTP + Socket.IO setup + frontend reverse proxy
 │       ├── games/                  # ★ Game plugin system
 │       │   ├── types.ts            # GameDefinition interface
 │       │   ├── registry.ts         # Game registration
@@ -157,7 +184,7 @@ kalema/
 │       └── jobs/                   # Cleanup job
 │
 ├── frontend/                       # Next.js + React app
-│   ├── server.ts                   # Custom server (Next.js + WebSocket proxy)
+│   ├── server.ts                   # Next.js custom server for direct frontend runtime
 │   └── src/
 │       ├── app/                    # Pages (home, create, join, room/[code])
 │       │   └── game-init.tsx       # Registers game plugins at startup
@@ -230,14 +257,14 @@ kalema/
 
 **Backend** — `backend/.env`:
 ```env
-PORT=26033
+PORT=26032
 CORS_ORIGIN=*
+FRONTEND_URL=http://localhost:26032
 ```
 
 **Frontend** — `frontend/.env.local`:
 ```env
 NEXT_PUBLIC_BACKEND_URL=           # Leave empty to auto-detect
-BACKEND_URL=http://localhost:26033
 PORT=26032
 HOSTNAME=0.0.0.0
 ```
@@ -260,7 +287,7 @@ Impostor-specific: `MIN_PLAYERS_TO_START = 3` (in `games/impostor/round.ts`)
 
 ### Reverse Proxy
 
-Since the frontend proxies Socket.IO traffic, your reverse proxy only forwards to **one port**:
+Since the backend is the single public entrypoint, your reverse proxy only forwards to **one port**:
 
 **Nginx:**
 ```nginx
