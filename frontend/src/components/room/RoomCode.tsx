@@ -6,11 +6,16 @@ interface RoomCodeProps {
   code: string;
 }
 
-async function copyToClipboard(text: string) {
+function copyToClipboard(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
-  } catch (err) {
-    console.error("Failed to copy text: ", err);
+    navigator.clipboard.writeText(text);
+  } catch {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
   }
 }
 
@@ -23,14 +28,14 @@ export default function RoomCode({ code }: RoomCodeProps) {
     return `${window.location.origin}/join?code=${code}`;
   }, [code]);
 
-  const handleCopyCode = useCallback(async () => {
-    await copyToClipboard(code);
+  const handleCopyCode = useCallback(() => {
+    copyToClipboard(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [code]);
 
-  const handleCopyLink = useCallback(async () => {
-    await copyToClipboard(getShareUrl());
+  const handleCopyLink = useCallback(() => {
+    copyToClipboard(getShareUrl());
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   }, [getShareUrl]);
@@ -53,8 +58,8 @@ export default function RoomCode({ code }: RoomCodeProps) {
     }
 
     // Fallback: copy link
-    await handleCopyLink();
-  }, [getShareUrl, handleCopyLink, t, code]);
+    handleCopyLink();
+  }, [code, getShareUrl, handleCopyLink, t]);
 
   return (
     <div className="flex flex-col items-center gap-1.5">

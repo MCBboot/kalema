@@ -14,7 +14,7 @@ export default function Room() {
     // If we land here directly, redirect
     const url = new URL(window.location.href);
     if (!url.searchParams.has('code')) {
-       router.replace("/");
+       router.replace("/kalema/");
     }
   }, [router]);
 

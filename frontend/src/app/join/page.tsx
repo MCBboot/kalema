@@ -54,7 +54,7 @@ function JoinPageContent() {
       if (data.reconnectToken && data.room?.code) {
         storeReconnectData(data.room.code, data.reconnectToken);
       }
-      router.push(`/room/?code=${data.room.code}`);
+      router.push(`/kalema/room/?code=${data.room.code}`);
     }
   );
 

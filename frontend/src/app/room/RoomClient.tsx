@@ -97,7 +97,7 @@ export default function RoomPage() {
         clearRoom();
         clearPlayer();
         // Redirect to join page with the room code so user can join
-        router.replace(`/join?code=${roomCode}`);
+        router.replace(`/kalema/join?code=${roomCode}`);
       }
     }
   }, [hydrated, room, myPlayerId, reconnectStatus, roomCode, router, clearRoom, clearPlayer]);
@@ -107,7 +107,7 @@ export default function RoomPage() {
     clearRoom();
     clearPlayer();
     clearReconnectData(roomCode);
-    router.replace("/");
+    router.replace("/kalema/");
   }, [emit, clearRoom, clearPlayer, roomCode, router]);
 
   // Core socket listeners

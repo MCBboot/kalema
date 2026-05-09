@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useSocketEmit, useSocketEvent } from "@/hooks/useSocketEvents";
 import { useTranslation } from "@/i18n/context";
 import { ImpostorEvents, type AdminMode, type ImpostorRoleAssignedPayload, type ImpostorPhaseChangedPayload, type ImpostorVoteStatePayload, type ImpostorRoundResultPayload, type ImpostorGameState, type ImpostorTurnUpdatedPayload, type ImpostorVoteRequestsPayload } from "@/lib/api-types";
@@ -91,13 +91,6 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
   }, [emit]);
 
   const players = room.players;
-  const playersMap = useMemo(() => {
-    return players.reduce((acc, player) => {
-      acc[player.id] = player;
-      return acc;
-    }, {} as Record<string, (typeof players)[number]>);
-  }, [players]);
-
   const eligibleTargets = players.filter((p) => p.id !== myPlayerId);
 
   const adminMode: AdminMode = gameState?.adminMode || "ADMIN_PLAYER";
@@ -211,8 +204,8 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
   const allTurnsDone = turnState?.allTurnsDone ?? (currentTurnIndex >= turnOrder.length);
 
   // Circle pattern: player[i] asks player[(i+1) % length]
-  const getAskerName = (index: number) => playersMap[turnOrder[index]]?.displayName ?? "";
-  const getAnswererName = (index: number) => playersMap[turnOrder[(index + 1) % turnOrder.length]]?.displayName ?? "";
+  const getAskerName = (index: number) => players.find((p) => p.id === turnOrder[index])?.displayName ?? "";
+  const getAnswererName = (index: number) => players.find((p) => p.id === turnOrder[(index + 1) % turnOrder.length])?.displayName ?? "";
 
   // ── STRUCTURED_ROUND phase ──
   if (phase === "STRUCTURED_ROUND") {
@@ -249,8 +242,8 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
         {/* Turn order list — shows asker → answerer pairs */}
         <div className="card divide-y divide-border">
           {turnOrder.map((playerId, index) => {
-            const player = playersMap[playerId];
-            const answerer = playersMap[turnOrder[(index + 1) % turnOrder.length]];
+            const player = players.find((p) => p.id === playerId);
+            const answerer = players.find((p) => p.id === turnOrder[(index + 1) % turnOrder.length]);
             if (!player) return null;
             const isDone = askedPlayerIds.includes(playerId);
             const isCurrent = index === currentTurnIndex && !allTurnsDone;
@@ -298,7 +291,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
         )}
 
         {/* Vote request indicator */}
-        <VoteRequestIndicator voteRequests={voteRequests} playersMap={playersMap} />
+        <VoteRequestIndicator voteRequests={voteRequests} players={players} />
 
         {/* Player actions */}
         {!hasRequestedVote && (
@@ -335,7 +328,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
   // ── FREE_ROUND phase ──
   if (phase === "FREE_ROUND") {
     const freeCurrentAskerId = !allTurnsDone ? turnOrder[currentTurnIndex] : null;
-    const freeCurrentAskerName = freeCurrentAskerId ? playersMap[freeCurrentAskerId]?.displayName : null;
+    const freeCurrentAskerName = freeCurrentAskerId ? players.find((p) => p.id === freeCurrentAskerId)?.displayName : null;
 
     return (
       <div className="w-full space-y-6 animate-fade-up">
@@ -365,7 +358,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
         {/* Turn queue — same order, current highlighted, no predetermined answerer */}
         <div className="card divide-y divide-border">
           {turnOrder.map((playerId, index) => {
-            const player = playersMap[playerId];
+            const player = players.find((p) => p.id === playerId);
             if (!player) return null;
             const isDone = askedPlayerIds.includes(playerId);
             const isCurrent = index === currentTurnIndex && !allTurnsDone;
@@ -406,7 +399,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
         )}
 
         {/* Vote request indicator */}
-        <VoteRequestIndicator voteRequests={voteRequests} playersMap={playersMap} />
+        <VoteRequestIndicator voteRequests={voteRequests} players={players} />
 
         {/* Player actions */}
         {!hasRequestedVote && (
@@ -464,7 +457,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
         {selectedTarget && (
           <div className="card-raised border-accent/20 p-6 text-center space-y-4">
             <p className="text-lg font-semibold">
-              {playersMap[selectedTarget]?.displayName}
+              {players.find(p => p.id === selectedTarget)?.displayName}
             </p>
             <div className="flex gap-3">
               <Button onClick={() => handleVote(selectedTarget)}>{t("common.confirm")}</Button>
@@ -498,7 +491,7 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
     const tallyEntries = Object.entries(roundResult.voteTally)
       .map(([playerId, count]) => ({
         playerId,
-        displayName: playersMap[playerId]?.displayName ?? playerId,
+        displayName: players.find(p => p.id === playerId)?.displayName ?? playerId,
         count,
         isImpostor: playerId === roundResult.impostorId,
       }))
@@ -565,12 +558,12 @@ function ImpostorGameInner({ room, myPlayerId, isAdmin }: GameComponentProps) {
   );
 }
 
-function VoteRequestIndicator({ voteRequests, playersMap }: { voteRequests: string[]; playersMap: Record<string, { displayName: string }> }) {
+function VoteRequestIndicator({ voteRequests, players }: { voteRequests: string[]; players: Array<{ id: string; displayName: string }> }) {
   const { t } = useTranslation();
   if (voteRequests.length === 0) return null;
 
   const requestNames = voteRequests
-    .map((id) => playersMap[id]?.displayName)
+    .map((id) => players.find((p) => p.id === id)?.displayName)
     .filter(Boolean);
 
   return (

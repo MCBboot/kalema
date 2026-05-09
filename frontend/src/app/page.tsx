@@ -50,7 +50,7 @@ export default function Home() {
       if (data.reconnectToken && data.room?.code) {
         storeReconnectData(data.room.code, data.reconnectToken);
       }
-      router.push(`/room/?code=${data.room.code}`);
+      router.push(`/kalema/room/?code=${data.room.code}`);
     }
   );
 
@@ -94,7 +94,7 @@ export default function Home() {
       setMyPlayer("LOCAL_ADMIN", savedDisplayName.trim());
       // No internet socket emit needed for local host setup initially
 
-      router.push(`/room/?code=${localRoomCode}`);
+      router.push(`/kalema/room/?code=${localRoomCode}`);
     } else {
       setCreating(true);
       const socket = connectSocket();
@@ -182,7 +182,7 @@ export default function Home() {
               </button>
 
               <Link
-                href="/join"
+                href="/kalema/join"
                 className="group flex h-14 items-center justify-center rounded-2xl border border-border-visible text-foreground text-lg font-semibold transition-all duration-300 hover:border-accent/40 hover:text-accent hover:bg-accent-glow active:scale-[0.98]"
               >
                 {t("room.join")}

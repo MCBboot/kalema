@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
+  basePath: "/kalema",
   // Ignore typescript errors during static build if any
   typescript: {
     ignoreBuildErrors: true,
