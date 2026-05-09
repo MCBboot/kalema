@@ -50,7 +50,7 @@ export default function Home() {
       if (data.reconnectToken && data.room?.code) {
         storeReconnectData(data.room.code, data.reconnectToken);
       }
-      router.push(`/room/${data.room.code}`);
+      router.push(`/room/?code=${data.room.code}`);
     }
   );
 
@@ -94,7 +94,7 @@ export default function Home() {
       setMyPlayer("LOCAL_ADMIN", savedDisplayName.trim());
       // No internet socket emit needed for local host setup initially
 
-      router.push(`/room/${localRoomCode}`);
+      router.push(`/room/?code=${localRoomCode}`);
     } else {
       setCreating(true);
       const socket = connectSocket();
