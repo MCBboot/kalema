@@ -3,8 +3,8 @@ import { createServer, Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { io as ioc, Socket } from "socket.io-client";
 import { registerSocketHandlers } from "../socket/registerSocketHandlers.js";
-import { registerGame } from "../games/registry.js";
-import { impostorGame, initImpostorGame } from "../games/impostor/index.js";
+import { registerGame } from "@kalema/shared";
+import { impostorGame, initImpostorGame } from "@kalema/shared";
 import {
   getAllRooms,
   getAllReconnectTokens,

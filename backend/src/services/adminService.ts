@@ -1,6 +1,6 @@
-import { Room } from "../models/room.js";
-import { Player, createOfflinePlayer } from "../models/player.js";
-import { generateId } from "../utils/id.js";
+import { Room } from "@kalema/shared";
+import { Player, createOfflinePlayer } from "@kalema/shared";
+import { generateId } from "@kalema/shared/dist/utils/id.js";
 import { validateDisplayName } from "../validators/playerValidators.js";
 import { getDisplayNames } from "./playerService.js";
 

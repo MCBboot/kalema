@@ -1,19 +1,12 @@
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { loadWordsFromFile } from "../../utils/fileLoader.js";
 import { ImpostorData } from "./state.js";
+import { defaultWordsList } from "./data/defaultWords.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-let defaultWords: string[] = [];
+let defaultWords: string[] = defaultWordsList;
 
 export function loadImpostorWords(): void {
-  const filePath = resolve(__dirname, "./data/default-words.txt");
-  defaultWords = loadWordsFromFile(filePath);
-
+  // Now loaded directly from JS array in shared environment to support browsers
   if (defaultWords.length === 0) {
-    throw new Error("Impostor default words file is empty or missing");
+    throw new Error("Impostor default words list is empty");
   }
 }
 

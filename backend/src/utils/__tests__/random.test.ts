@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickRandom } from "../random.js";
+import { pickRandom } from "@kalema/shared/dist/utils/random.js";
 
 describe("pickRandom", () => {
   it("RN1: returns an element from the array", () => {

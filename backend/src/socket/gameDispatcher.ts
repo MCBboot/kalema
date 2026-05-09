@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { getGame, getGameEventMap } from "../games/registry.js";
-import { GameEventContext } from "../games/types.js";
+import { getGame, getGameEventMap } from "@kalema/shared";
+import { GameEventContext } from "@kalema/shared";
 import { getSessionBySocket, getRoom } from "../store/memoryStore.js";
 import { ACTION_REJECTED } from "./events.js";
-import { logError } from "../utils/logger.js";
+import { logError } from "@kalema/shared/dist/utils/logger.js";
 
 /**
  * Register game-specific socket event handlers.
@@ -43,8 +43,6 @@ export function registerGameHandlers(io: Server, socket: Socket): void {
         const ctx: GameEventContext = {
           room,
           playerId: session.playerId,
-          io,
-          socket,
           emit: (event: string, data: unknown) => socket.emit(event, data),
           broadcast: (event: string, data: unknown) => io.to(room.id).emit(event, data),
           emitTo: (socketId: string, event: string, data: unknown) => io.to(socketId).emit(event, data),

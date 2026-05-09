@@ -1,4 +1,3 @@
-import { Server, Socket } from "socket.io";
 import { Room } from "../models/room.js";
 import { Player } from "../models/player.js";
 
@@ -11,14 +10,13 @@ export interface GameState {
 export interface GameEventContext {
   room: Room;
   playerId: string;
-  io: Server;
-  socket: Socket;
-  /** Emit to the requesting socket only */
+  // io and socket removed from shared interface to be abstract
+  /** Emit to the requesting socket/peer only */
   emit: (event: string, data: unknown) => void;
-  /** Broadcast to all sockets in the room */
+  /** Broadcast to all sockets/peers in the room */
   broadcast: (event: string, data: unknown) => void;
-  /** Emit to a specific socket */
-  emitTo: (socketId: string, event: string, data: unknown) => void;
+  /** Emit to a specific socket/peer */
+  emitTo: (playerIdOrSocketId: string, event: string, data: unknown) => void;
 }
 
 export interface GameDefinition {

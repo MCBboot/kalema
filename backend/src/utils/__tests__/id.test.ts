@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { generateId, generateRoomCode } from "../id.js";
-import { ROOM_CODE_LENGTH } from "../../config/constants.js";
+import { generateId, generateRoomCode } from "@kalema/shared/dist/utils/id.js";
+import { ROOM_CODE_LENGTH } from "@kalema/shared/dist/config/constants.js";
 
 describe("generateId", () => {
   it("ID1: returns unique values across 100 calls", () => {

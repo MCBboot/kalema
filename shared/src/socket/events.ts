@@ -1,5 +1,5 @@
-import { Room, RoomStatus } from "@kalema/shared";
-import { Player } from "@kalema/shared";
+import { Room, RoomStatus } from "../index.js";
+import { Player } from "../index.js";
 
 // ── Client-to-Server Event Names (Core) ──
 

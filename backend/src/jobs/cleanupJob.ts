@@ -1,7 +1,7 @@
-import { CLEANUP_INTERVAL_MS, ROOM_INACTIVITY_TIMEOUT_MS } from "../config/constants.js";
+import { CLEANUP_INTERVAL_MS, ROOM_INACTIVITY_TIMEOUT_MS } from "@kalema/shared/dist/config/constants.js";
 import { cleanExpiredTokens } from "../services/reconnectService.js";
 import { getAllRooms, deleteRoom } from "../store/memoryStore.js";
-import { logInfo } from "../utils/logger.js";
+import { logInfo } from "@kalema/shared/dist/utils/logger.js";
 
 export function startCleanupJob(): NodeJS.Timeout {
   const handle = setInterval(() => {

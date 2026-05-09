@@ -44,7 +44,7 @@ import {
   addOfflinePlayer,
   removeOfflinePlayer,
 } from "../services/adminService.js";
-import { getGame } from "../games/registry.js";
+import { getGame } from "@kalema/shared";
 import {
   getSessionBySocket,
   getRoom,
@@ -56,7 +56,7 @@ import {
 } from "../services/reconnectService.js";
 import { markDisconnected, findPlayerById } from "../services/playerService.js";
 import { registerGameHandlers } from "./gameDispatcher.js";
-import { logInfo, logError } from "../utils/logger.js";
+import { logInfo, logError } from "@kalema/shared/dist/utils/logger.js";
 
 function emitPlayerList(io: Server, room: { id: string; players: Array<{ id: string; displayName: string; type: string; isAdmin: boolean; isConnected: boolean }> }): void {
   io.to(room.id).emit(PLAYER_LIST_UPDATED, {
@@ -527,6 +527,50 @@ export function registerSocketHandlers(io: Server): void {
     socket.on("disconnect", () => {
       logInfo("Socket", `Client disconnected: ${socket.id}`);
       handleDisconnect(io, socket);
+    });
+
+    // ── WebRTC Signaling Events ──
+
+    socket.on("webrtc_offer", (payload: any) => {
+      const session = getSessionBySocket(socket.id);
+      if (!session) return;
+      const room = getRoom(session.roomId);
+      if (!room) return;
+      const targetPlayer = room.players.find(p => p.id === payload.targetPlayerId);
+      if (targetPlayer && targetPlayer.socketId) {
+        io.to(targetPlayer.socketId).emit("webrtc_offer", {
+          sourcePlayerId: session.playerId,
+          payload: payload.offer,
+        });
+      }
+    });
+
+    socket.on("webrtc_answer", (payload: any) => {
+      const session = getSessionBySocket(socket.id);
+      if (!session) return;
+      const room = getRoom(session.roomId);
+      if (!room) return;
+      const targetPlayer = room.players.find(p => p.id === payload.targetPlayerId);
+      if (targetPlayer && targetPlayer.socketId) {
+        io.to(targetPlayer.socketId).emit("webrtc_answer", {
+          sourcePlayerId: session.playerId,
+          payload: payload.answer,
+        });
+      }
+    });
+
+    socket.on("webrtc_ice_candidate", (payload: any) => {
+      const session = getSessionBySocket(socket.id);
+      if (!session) return;
+      const room = getRoom(session.roomId);
+      if (!room) return;
+      const targetPlayer = room.players.find(p => p.id === payload.targetPlayerId);
+      if (targetPlayer && targetPlayer.socketId) {
+        io.to(targetPlayer.socketId).emit("webrtc_ice_candidate", {
+          sourcePlayerId: session.playerId,
+          payload: payload.candidate,
+        });
+      }
     });
   });
 }
