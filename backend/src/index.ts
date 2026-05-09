@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { httpServer, io } from "./server.js";
 import { PORT } from "./config/env.js";
-import { logInfo, logError } from "./utils/logger.js";
-import { registerGame } from "./games/registry.js";
-import { impostorGame, initImpostorGame } from "./games/impostor/index.js";
+import { logInfo, logError } from "@kalema/shared/dist/utils/logger.js";
+import { registerGame } from "@kalema/shared";
+import { impostorGame, initImpostorGame } from "@kalema/shared";
 import { registerSocketHandlers } from "./socket/registerSocketHandlers.js";
 import { startCleanupJob } from "./jobs/cleanupJob.js";
 

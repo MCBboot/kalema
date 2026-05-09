@@ -11,9 +11,9 @@ import {
   setSession,
   getSessionBySocket,
 } from "../../store/memoryStore.js";
-import { createRoom as createRoomModel } from "../../models/room.js";
-import { createOnlinePlayer } from "../../models/player.js";
-import { RECONNECT_TOKEN_EXPIRY_MS } from "../../config/constants.js";
+import { createRoom as createRoomModel } from "@kalema/shared";
+import { createOnlinePlayer } from "@kalema/shared";
+import { RECONNECT_TOKEN_EXPIRY_MS } from "@kalema/shared/dist/config/constants.js";
 
 function clearStores(): void {
   getAllRooms().clear();

@@ -6,6 +6,7 @@ import { PlayerProvider } from "@/store/playerStore";
 import { ToastProvider } from "@/components/shared/Toast";
 import { ThemeProvider } from "@/store/themeStore";
 import { I18nProvider } from "@/i18n/context";
+import { WebRTCProvider } from "@/lib/webrtc/WebRTCProvider";
 import Menu from "@/components/shared/Menu";
 import { GameInit } from "./game-init";
 
@@ -30,13 +31,15 @@ export default function RootLayout({
           <I18nProvider>
             <ToastProvider>
               <ConnectionProvider>
-                <RoomProvider>
-                  <PlayerProvider>
-                    <GameInit />
-                    <Menu />
-                    {children}
-                  </PlayerProvider>
-                </RoomProvider>
+                <WebRTCProvider>
+                  <RoomProvider>
+                    <PlayerProvider>
+                      <GameInit />
+                      <Menu />
+                      {children}
+                    </PlayerProvider>
+                  </RoomProvider>
+                </WebRTCProvider>
               </ConnectionProvider>
             </ToastProvider>
           </I18nProvider>

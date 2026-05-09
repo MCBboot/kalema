@@ -10,16 +10,21 @@ import { useSocketEvent } from "@/hooks/useSocketEvents";
 import { storeReconnectData } from "@/hooks/useReconnect";
 import type { Room, Player, ActionRejectedPayload } from "@/lib/api-types";
 import ErrorMessage from "@/components/shared/ErrorMessage";
+import ModeSelector from "@/components/shared/ModeSelector";
+import { useWebRTC } from "@/lib/webrtc/WebRTCProvider";
+import { OfflineP2PModal } from "@/components/shared/OfflineP2PModal";
 
 export default function Home() {
   const router = useRouter();
   const { savedDisplayName, hydrated, setSavedDisplayName, setMyPlayer } = usePlayer();
   const { setRoom } = useRoom();
   const { t } = useTranslation();
+  const { mode, setMode } = useWebRTC();
   const [name, setName] = useState("");
   const [editing, setEditing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   useEffect(() => {
     if (hydrated && savedDisplayName) {
@@ -57,10 +62,45 @@ export default function Home() {
   const handleCreateRoom = useCallback(() => {
     if (!savedDisplayName?.trim()) return;
     setErrorCode(null);
-    setCreating(true);
-    const socket = connectSocket();
-    socket.emit("create_room", { displayName: savedDisplayName.trim() });
-  }, [savedDisplayName]);
+
+    if (mode === "LOCAL_HOST") {
+      setMode("LOCAL_HOST", "LOCAL_ADMIN");
+      // In Local Mode, room logic runs purely locally via WebRTCManager
+      // Since it's a browser, creating a local offline room immediately sets up state
+      const localRoomId = "L-" + Math.floor(Math.random() * 10000);
+      const localRoomCode = Math.floor(10000 + Math.random() * 90000).toString();
+
+      const newRoom: Room = {
+        id: localRoomId,
+        code: localRoomCode,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        status: "WAITING",
+        adminPlayerId: "LOCAL_ADMIN",
+        players: [{
+          id: "LOCAL_ADMIN",
+          displayName: savedDisplayName.trim(),
+          type: "ONLINE",
+          isAdmin: true,
+          isConnected: true,
+          joinedAt: Date.now(),
+          socketId: null
+        }],
+        selectedGame: null,
+        gameState: null
+      };
+
+      setRoom(newRoom);
+      setMyPlayer("LOCAL_ADMIN", savedDisplayName.trim());
+      // No internet socket emit needed for local host setup initially
+
+      router.push(`/room/${localRoomCode}`);
+    } else {
+      setCreating(true);
+      const socket = connectSocket();
+      socket.emit("create_room", { displayName: savedDisplayName.trim() });
+    }
+  }, [savedDisplayName, mode, setMode, setRoom, setMyPlayer, router]);
 
   const showNameInput = !hasName || editing;
 
@@ -128,6 +168,10 @@ export default function Home() {
 
             {errorCode && <ErrorMessage code={errorCode} />}
 
+            <div className="w-full">
+              <ModeSelector mode={mode as any} setMode={setMode as any} />
+            </div>
+
             <div className="flex flex-col gap-3 w-full">
               <button
                 onClick={handleCreateRoom}
@@ -136,6 +180,7 @@ export default function Home() {
               >
                 {creating ? t("common.loading") : t("room.create")}
               </button>
+
               <Link
                 href="/join"
                 className="group flex h-14 items-center justify-center rounded-2xl border border-border-visible text-foreground text-lg font-semibold transition-all duration-300 hover:border-accent/40 hover:text-accent hover:bg-accent-glow active:scale-[0.98]"
@@ -146,6 +191,8 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {showOfflineModal && <OfflineP2PModal onClose={() => setShowOfflineModal(false)} isHost={mode === "LOCAL_HOST"} />}
 
       <footer className="absolute bottom-6 text-center w-full">
         <span className="text-xs text-foreground-dim tracking-wider">{t("app.version")}</span>

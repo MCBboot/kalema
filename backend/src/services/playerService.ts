@@ -1,6 +1,6 @@
-import { Room } from "../models/room.js";
-import { Player, createOnlinePlayer, createOfflinePlayer } from "../models/player.js";
-import { generateId } from "../utils/id.js";
+import { Room } from "@kalema/shared";
+import { Player, createOnlinePlayer, createOfflinePlayer } from "@kalema/shared";
+import { generateId } from "@kalema/shared/dist/utils/id.js";
 
 export function addOnlinePlayer(room: Room, displayName: string, socketId: string): Player {
   const player = createOnlinePlayer(generateId(), displayName, socketId);

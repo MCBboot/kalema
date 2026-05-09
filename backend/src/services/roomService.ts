@@ -1,7 +1,7 @@
-import { Room, createRoom as createRoomModel } from "../models/room.js";
-import { Player, createOnlinePlayer } from "../models/player.js";
-import { generateId, generateRoomCode } from "../utils/id.js";
-import { getGame } from "../games/registry.js";
+import { Room, createRoom as createRoomModel } from "@kalema/shared";
+import { Player, createOnlinePlayer } from "@kalema/shared";
+import { generateId, generateRoomCode } from "@kalema/shared/dist/utils/id.js";
+import { getGame } from "@kalema/shared";
 import {
   setRoom,
   getRoom,

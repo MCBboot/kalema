@@ -8,8 +8,8 @@ import {
   getAllRooms,
   getSessionBySocket,
 } from "../../store/memoryStore.js";
-import { registerGame } from "../../games/registry.js";
-import { impostorGame, initImpostorGame } from "../../games/impostor/index.js";
+import { registerGame } from "@kalema/shared";
+import { impostorGame, initImpostorGame } from "@kalema/shared";
 
 // Register impostor game for tests that need it
 try {

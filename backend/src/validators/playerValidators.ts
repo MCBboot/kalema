@@ -1,4 +1,4 @@
-import { MAX_DISPLAY_NAME_LENGTH } from "../config/constants.js";
+import { MAX_DISPLAY_NAME_LENGTH } from "@kalema/shared/dist/config/constants.js";
 
 type NameValidationResult =
   | { valid: true; name: string }

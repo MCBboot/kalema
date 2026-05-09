@@ -6,13 +6,13 @@ import {
   setRoom,
   setReconnectToken,
 } from "../../store/memoryStore.js";
-import { createRoom as createRoomModel } from "../../models/room.js";
-import { createOnlinePlayer } from "../../models/player.js";
+import { createRoom as createRoomModel } from "@kalema/shared";
+import { createOnlinePlayer } from "@kalema/shared";
 import {
   CLEANUP_INTERVAL_MS,
   ROOM_INACTIVITY_TIMEOUT_MS,
   RECONNECT_TOKEN_EXPIRY_MS,
-} from "../../config/constants.js";
+} from "@kalema/shared/dist/config/constants.js";
 
 function clearStores(): void {
   getAllRooms().clear();

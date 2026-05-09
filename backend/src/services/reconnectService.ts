@@ -1,7 +1,7 @@
-import { Room } from "../models/room.js";
-import { Player } from "../models/player.js";
-import { generateId } from "../utils/id.js";
-import { RECONNECT_TOKEN_EXPIRY_MS } from "../config/constants.js";
+import { Room } from "@kalema/shared";
+import { Player } from "@kalema/shared";
+import { generateId } from "@kalema/shared/dist/utils/id.js";
+import { RECONNECT_TOKEN_EXPIRY_MS } from "@kalema/shared/dist/config/constants.js";
 import {
   getReconnectToken,
   setReconnectToken,

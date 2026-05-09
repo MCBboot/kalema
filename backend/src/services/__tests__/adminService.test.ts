@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Room, createRoom as createRoomModel } from "../../models/room.js";
-import { createOnlinePlayer, createOfflinePlayer } from "../../models/player.js";
+import { Room, createRoom as createRoomModel } from "@kalema/shared";
+import { createOnlinePlayer, createOfflinePlayer } from "@kalema/shared";
 import {
   transferAdmin,
   kickPlayer,

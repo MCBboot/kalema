@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Room, createRoom as createRoomModel } from "../../models/room.js";
+import { Room, createRoom as createRoomModel } from "@kalema/shared";
 import {
   addOnlinePlayer,
   addOfflinePlayer,

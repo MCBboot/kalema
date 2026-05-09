@@ -1,4 +1,4 @@
-import { Room } from "../models/room.js";
+import { Room } from "@kalema/shared";
 
 export interface SocketSession {
   roomId: string;
